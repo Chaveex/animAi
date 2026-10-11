@@ -57,7 +57,7 @@ def _check_shapes(where: str, region: dict) -> None:
 
 
 RIG_KEYS = {"version", "sprite", "view", "template", "pivot", "bones", "parts", "ik", "outline", "outline_mode",
-            "rest_offsets"}
+            "rest_offsets", "fill_holes"}
 BONE_KEYS = {"parent", "joint", "rest_offset"}
 # Limb roots that "rest_offsets": "auto" brings onto the axis of their near twin.
 REST_OFFSET_PAIRS = (("thigh_l", "thigh_r"), ("arm_l", "arm_r"))
@@ -124,6 +124,8 @@ def validate_rig(rig: dict) -> list[str]:
         warnings += unknown_keys(bone, BONE_KEYS, f"bone '{name}'")
         if "rest_offset" in bone and not _int_pair(bone["rest_offset"]):
             raise AnimaiError(f"bone '{name}': rest_offset must be [dx, dy] integers")
+    if not isinstance(rig.get("fill_holes", True), bool):
+        raise AnimaiError("rig.fill_holes must be true or false")
     if rig.get("rest_offsets", "none") not in ("none", "auto"):
         raise AnimaiError("rig.rest_offsets must be \"none\" or \"auto\"")
     if rig.get("template", "humanoid") == "humanoid" and "hips" not in bones:

@@ -5,6 +5,17 @@ import { api, ConflictError } from './data/api.js';
 
 const clone = (v) => (v == null ? v : JSON.parse(JSON.stringify(v)));
 
+/** Couleur du cadre des pixels non assignés. Choix de l'utilisateur, gardé d'une session à l'autre. */
+export const UNASSIGNED_DEFAULT = '#00FF00';
+const UNASSIGNED_KEY = 'animai.unassignedColor';
+function storedUnassignedColor() {
+  try {
+    const v = localStorage.getItem(UNASSIGNED_KEY);
+    if (/^#[0-9a-f]{6}$/i.test(v || '')) return v.toUpperCase();
+  } catch { /* stockage indisponible */ }
+  return UNASSIGNED_DEFAULT;
+}
+
 // --- Bus d'événements ---------------------------------------------------------
 // Sujets : status project rig labels anim selection view frame hover sync report
 //          history preview saved visibility toast qa
@@ -44,6 +55,7 @@ export const state = {
   selection: null, // { kind: 'bone' | 'part', id }
   layers: { skeleton: true, labelmap: false, pivots: true, grid: false, onion: false },
   labelOpacity: 0.6,
+  unassignedColor: storedUnassignedColor(), // cadre des pixels non assignés, #RRGGBB
   background: 'checker', // checker | grey | black | white
   hiddenParts: new Set(),
   hiddenBones: new Set(),
@@ -79,6 +91,14 @@ export function unassignedCount() {
 
 export function setView(patch) {
   Object.assign(state, patch);
+  emit('view');
+}
+export function setUnassignedColor(color) {
+  if (!/^#[0-9a-f]{6}$/i.test(color || '')) return;
+  state.unassignedColor = color.toUpperCase();
+  try {
+    localStorage.setItem(UNASSIGNED_KEY, state.unassignedColor);
+  } catch { /* stockage indisponible : le choix vaut pour la session */ }
   emit('view');
 }
 export function setLayer(name, value) {
@@ -249,6 +269,35 @@ export function handRegionParts() {
   });
 }
 
+/**
+ * Édition structurelle de rig.json et / ou anim.json en un seul pas d'historique : ajouter,
+ * renommer ou supprimer un pivot (os), ajouter une pièce, ajouter ou retirer une frame.
+ * `mutate` reçoit un brouillon { rig, anim, partNames, selection, frame } et le modifie.
+ */
+export function editCmd(label, mutate) {
+  const snap = () => ({ rig: clone(state.rig), anim: clone(state.anim), partNames: [...state.partNames], selection: clone(state.selection), frame: state.frame });
+  const before = snap(), after = snap();
+  mutate(after);
+  const rigChanged = JSON.stringify(before.rig) !== JSON.stringify(after.rig);
+  const animChanged = JSON.stringify(before.anim) !== JSON.stringify(after.anim);
+  const partsChanged = before.partNames.join('\n') !== after.partNames.join('\n');
+  const apply = (s) => {
+    if (rigChanged) state.rig = clone(s.rig);
+    if (partsChanged) state.partNames = [...s.partNames];
+    if (animChanged) state.anim = clone(s.anim);
+    state.selection = clone(s.selection);
+    state.frame = Math.max(0, Math.min(s.frame, frameCount() - 1));
+  };
+  return {
+    label,
+    saves: [rigChanged && 'rig', animChanged && 'anim'].filter(Boolean),
+    emits: [rigChanged && 'rig', partsChanged && 'labels', animChanged && 'anim', 'selection', 'frame'].filter(Boolean),
+    redo: () => apply(after),
+    undo: () => apply(before),
+    isNoop: () => !rigChanged && !animChanged,
+  };
+}
+
 export const rigSnap = () => ({ rig: clone(state.rig), partNames: [...state.partNames], labels: state.labels.slice() });
 export const animSnap = () => ({ anim: clone(state.anim) });
 
@@ -406,7 +455,8 @@ function pump() {
     let kind = null;
     try {
       while (dirty.size) {
-        kind = ['labels', 'rig', 'anim'].find((k) => dirty.has(k));
+        // rig avant labels : une pièce tout juste ajoutée doit exister dans rig.json quand la label map la cite
+        kind = ['rig', 'labels', 'anim'].find((k) => dirty.has(k));
         dirty.delete(kind);
         if (kind === 'labels') {
           const r = await tracked(() => api.putLabelMap({ parts: [...state.partNames], labels: state.labels.slice() }, state.rigRev));

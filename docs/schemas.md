@@ -59,6 +59,7 @@ pixels de la pièce = arrondi(joint_monde(B)) + R(angle_monde(B)) · (pixel - jB
 - Une pièce sans aucun pixel est ignorée (avertissement).
 
 - `outline` (`"auto"` par défaut, `"none"` ou `false`, ou `"#RRGGBB"`) et `outline_mode` (`"outside"` par défaut, ou `"inside"`) : voir « Passe de contour ».
+- `fill_holes` (booléen, défaut `true`) : bouchage automatique des trous au rendu, voir « Bouchage des trous ». Autre valeur qu'un booléen = erreur.
 - **`region` est obligatoire** dans chaque pièce et doit être un objet ; `{}` désigne une pièce sans pixel pour l'instant. Une pièce sans `region` est une erreur.
 - **Clés inconnues** : toute clé que ce format ne définit pas (dans le rig, un os, une pièce, une région, `exclude`, une entrée `ik`) donne un avertissement `unknown key '<clé>' in <emplacement>: ignored`. Les clés commençant par `_` sont des commentaires, acceptées en silence.
 
@@ -119,6 +120,21 @@ Sur un sprite à contour, un membre dessiné à l'intérieur du corps n'a pas de
 Pourquoi `"outside"` par défaut : en `"inside"`, le trait mange un pixel de chaque côté du membre ; un avant-bras de 3 ou 4 px se réduit à un filet et les mains disparaissent. En `"outside"`, le membre garde sa largeur et la silhouette ne grandit que de 1 px, uniquement le long des bords qui n'avaient pas de trait. Il faut un `--padding` d'au moins 1 (défaut 2) pour que ce trait ne soit pas coupé au bord du canvas.
 
 Limites : le trait ajouté est un liseré uniforme de 1 px, sans les nuances d'un contour dessiné ; en `"outside"`, un membre qui sort du corps paraît 1 px plus épais de chaque côté que lorsqu'il était devant le torse ; un interstice de 1 px entre deux membres peut être bouché par le trait.
+
+### Bouchage des trous
+
+Activé par défaut (`"fill_holes": false` dans le rig pour le couper). La passe s'exécute sur chaque frame, après la composition et **avant** la passe de contour. Elle ne fait qu'ajouter des pixels, toujours d'une couleur de la palette, et ne touche jamais à l'espace négatif légitime (vide entre les jambes, entre un bras et le corps).
+
+Deux sortes de trou sont bouchées :
+
+1. **Articulation ouverte** : un pixel transparent dans le disque qui doit rester plein autour d'un joint (rayon `joints.<os>` de `frames.json`, cause 1 du check `holes`).
+2. **Fissure** : une zone transparente fermée (4-connexité) d'au plus 4 pixels, bordée par au moins deux pièces différentes. Une zone bordée par une seule pièce est la forme de cette pièce, elle reste vide. Une zone qui est déjà un vide fermé du sprite, au même endroit et entourée de pixels inchangés, reste vide : **la pose de repos n'est jamais modifiée**.
+
+Couleur d'un pixel bouché : copie d'un voisin 4-connexe opaque. Priorité : une couleur autre que la couleur de contour s'il y a le choix, puis la pièce dessinée le plus derrière dans la frame (le corps continue sous le membre), puis haut, gauche, droite, bas. Le remplissage avance vers l'intérieur un anneau à la fois. Le pixel bouché appartient à la pièce du voisin copié (masquée avec elle dans l'éditeur, comptée dans `owners_runs`).
+
+Un avertissement donne le compte par frame : `holes filled automatically ("fill_holes": false in rig.json to keep them): frame 5: 4 px`.
+
+Limites : c'est un aplat copié, pas un dessin (ni ombrage ni motif) ; un vide fermé de plus de 4 px hors d'un disque d'articulation n'est pas bouché ; un trou sans aucun pixel opaque autour reste vide ; une articulation déboîtée (cause 3 de `holes`) n'est pas corrigée ; les déformations dues à la rotation ne sont pas concernées.
 
 ### IK deux os (optionnel)
 

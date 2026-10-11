@@ -17,7 +17,7 @@ function toEntry(f) {
   canvas.width = f.width;
   canvas.height = f.height;
   canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(f.data), f.width, f.height), 0, 0);
-  return { canvas, width: f.width, height: f.height, data: f.data, origin: f.origin, pivot: f.pivot || null, owners: f.owners || null, joints: f.joints || null, tints: new Map() };
+  return { canvas, width: f.width, height: f.height, data: f.data, origin: f.origin, pivot: f.pivot || null, owners: f.owners || null, joints: f.joints || null, angles: f.angles || null, tints: new Map() };
 }
 
 /** Silhouette unie de la frame (pour l'onion skin), mise en cache par couleur. */

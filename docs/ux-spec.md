@@ -121,7 +121,7 @@ La barre d'état affiche en permanence, pour le pixel survolé (ou sous le curse
 | Calque | Touche | Contenu | Coquille |
 |---|---|---|---|
 | Squelette | `S` | Liens parent → enfant, trait blanc cerné de noir ; liens de l'os sélectionné en couleur d'accent | oui |
-| Label map | `L` | Couleur + motif de chaque pièce par-dessus l'image (opacité réglable de 20 à 100 %, 60 % par défaut) ; numéro de la pièce en badge à partir de ×6 ; pixels non assignés marqués d'un point blanc cerné de noir | oui |
+| Label map | `L` | Couleur + motif de chaque pièce par-dessus l'image (opacité réglable de 20 à 100 %, 60 % par défaut) ; numéro de la pièce en badge à partir de ×6 ; pixels non assignés marqués d'un point blanc cerné de noir et **encadrés** (vert `#00FF00` par défaut ; bouton « Non assignés » de la barre : palette de 8 couleurs + couleur libre, choix gardé entre les sessions) | oui |
 | Pivots | `P` | Joints : rond blanc cerné de noir (carré pour la racine), plus grand et en couleur d'accent pour l'os sélectionné. Pivot d'export : croix, à la position **fournie par le moteur** (champ `pivot` de la frame, en pixels du canvas, coin de grille). Le pivot est ancré sur la bbox du sprite au repos : l'UI ne le recalcule pas, et ne l'affiche pas tant qu'aucune frame n'a été rendue (voir demande D2, § 13.5). | oui |
 | Nom de l'os | — | Seul l'os **sélectionné** est nommé. L'étiquette est posée **hors de l'image** (à droite de la zone, sinon à gauche) et reliée au joint par un filet : sur un sprite étroit, une étiquette collée au joint cachait le membre voisin. | oui |
 | Grille | `G` | Une ligne par pixel du sprite à partir de ×4, ligne renforcée tous les 8 pixels | oui |
@@ -159,10 +159,30 @@ Comme le pinceau, mais rend les pixels **non assignés**. Pas besoin de pièce c
 ### Déplacer (`J`) — coquille : oui
 
 - **Étape Rigger** : glisser un joint le déplace dans la pose de repos, aimanté au pixel entier, borné au sprite. Seul ce joint bouge (ses enfants gardent leur position). Écrit `bones.<os>.joint`.
-- **Étapes Animer / Exporter** : glisser un joint décale l'os **dans la frame courante** (`frames[i].bones.<os>.pos`). Un rond fantôme montre la destination ; la frame est re-rendue au relâchement.
+- **Étape Rigger, double-clic dans le vide** : ajoute un pivot à cet endroit, enfant de l'os sélectionné (voir « Pivots » ci-dessous).
+- **Étapes Animer / Exporter : poser en glissant les pivots.** Glisser le joint d'un os fait **tourner son parent**, c'est-à-dire le membre qui porte ce joint (glisser le coude tourne le bras autour de l'épaule). Écrit `frames[i].bones.<parent>.rot`, en degrés entiers. Un os sans enfant (main, pied, tête) n'a pas de joint en aval : il porte une poignée **losange** sur le pixel de ses pièces le plus éloigné de son joint ; la glisser le fait tourner lui-même. Rotation par **pas de 15°** par défaut (angles discrets de `CLAUDE.md`) ; `Maj` = angle libre, au degré. `Alt`+glisser, ou glisser la racine : décale l'os (`frames[i].bones.<os>.pos`). Un trait fantôme et une étiquette (`os angle (écart)`) montrent le résultat ; la frame est re-rendue par le moteur au relâchement. Un os piloté par une chaîne IK dans la frame n'est pas tournable (message).
 - Flèches : 1 px sur l'os sélectionné ; `Maj`+flèche : 5 px. Une rafale de flèches (moins de 0,8 s entre deux appuis) forme une seule entrée d'historique.
 - `R` / `Maj+R` : rotation de l'os sélectionné de +15° / −15° dans la frame courante. Le pas de 15° est voulu (angles discrets de `CLAUDE.md`) ; le champ de l'inspecteur accepte tout entier.
 - `Échap` pendant un glisser : abandonne.
+
+### Pivots : ajouter, renommer, supprimer — coquille : oui
+
+Un pivot est un os de `rig.json` (`bones.<nom>` : `parent`, `joint`).
+
+- **Ajouter** : bouton « + Pivot » de la hiérarchie, ou double-clic dans le viewport avec l'outil Déplacer à l'étape Rigger. Le pivot devient enfant de l'os sélectionné (de l'os de la pièce sélectionnée, sinon de la racine), nommé `pivot_N`, sélectionné.
+- **Renommer** : champ « Nom » de l'inspecteur (`F2` ou double-clic sur la ligne de la hiérarchie y place le curseur). Une lettre puis lettres, chiffres, `_`, `-` ; nom unique. Le renommage suit partout : parents, pièces, chaînes IK, clés `bones` et `z` de l'animation. `hips` ne se renomme pas avec le template humanoïde (le moteur l'exige).
+- **Supprimer** : bouton de l'inspecteur ou `Suppr` dans la hiérarchie. Ses pièces et ses enfants passent à son parent ; ses clés d'animation et les chaînes IK qui le citent sont retirées (signalé). La racine ne se supprime pas.
+- **Re-parenter** : liste « Parent » de l'inspecteur (jamais lui-même ni un descendant).
+- **« + Pièce »** : pièce vide sur l'os sélectionné, pinceau armé ; sans pièce, un pivot ne déplace rien.
+- Chaque opération est une seule entrée d'historique, même quand elle touche `rig.json` et `anim.json`.
+
+### Animer à la main : capture de poses — coquille : oui
+
+- **« Nouvelle animation vide »** (carte Animer, ou lien de la timeline vide) : une frame au repos, 100 ms, boucle ; outil Déplacer armé. Remplace l'animation courante (annulable).
+- **« + Capturer la pose »** (`K`) : garde la frame courante et insère juste après une copie, qui devient la frame courante. On pose, on capture, on modifie la copie, et ainsi de suite. Au-delà de 8 frames : rappel de lisibilité.
+- **« Supprimer la frame »** : il en reste toujours au moins une.
+- **Nom** de l'animation : champ de la carte Animer (`anim.name`).
+- Chaque frame est une pose complète, sans interpolation (convention du moteur) : la copie est le point de départ de la pose suivante.
 
 ### Outils spécifiés, pas encore construits
 
@@ -171,7 +191,7 @@ Comme le pinceau, mais rend les pixels **non assignés**. Pas besoin de pièce c
 | **Remplissage** (`F`) | Clic : assigne à la pièce cible tous les pixels opaques contigus (4-connexité) qui ont le même propriétaire que le pixel cliqué. |
 | **Lasso** (`Q`) | Tracé à main levée fermé au relâchement ; assigne les pixels opaques dont le centre est dedans. `Alt` = désassigner. |
 | **Poignées IK** | À l'étape Animer, un losange sur chaque `target_bone` d'une chaîne IK ; le glisser déplace la cible, le cœur résout la chaîne et renvoie les rotations. |
-| **Ajout / suppression d'os et de pièces, renommage, re-parentage** | Dans la hiérarchie : menu contextuel et glisser-déposer. Supprimer un os rattache ses pièces et ses enfants à son parent ; supprimer une pièce rend ses pixels non assignés. |
+| **Suppression et renommage de pièces, re-parentage par glisser-déposer** | Dans la hiérarchie. Supprimer une pièce rend ses pixels non assignés. (Os : construit, voir « Pivots ».) |
 | **Choix du template** | À l'étape Préparer, liste des templates ; en changer repose les os proportionnellement et demande confirmation en ligne si des joints ont déjà été déplacés. |
 | **Verrouillage** | Cadenas par ligne de la hiérarchie : une pièce verrouillée ne peut être ni peinte ni gommée, un os verrouillé ne peut pas être déplacé. |
 | **Palette de commandes** (`Ctrl+K`) | Liste filtrable de toutes les actions de la table des raccourcis. |
@@ -428,7 +448,7 @@ Objectif : distinguer les pièces **sans dépendre de la couleur**. Trois signau
 | 8, 16, 24 | gris foncé | `#4D4D4D` | plein | damier | rayures |
 
 - **Damier** : un pixel sur deux (ceux où x + y est impair) prend la couleur assombrie à 45 %. **Rayures** : une ligne sur deux (y impair). Au-delà de 24 pièces le cycle recommence ; le numéro reste unique.
-- **Non assigné** : point blanc cerné de noir au centre de chaque pixel (damier noir et blanc à 50 % en dessous de ×5). Lisible sur toute couleur, et le sprite reste visible même quand rien n'est encore assigné.
+- **Non assigné** : point blanc cerné de noir au centre de chaque pixel (damier noir et blanc à 50 % en dessous de ×5). Lisible sur toute couleur, et le sprite reste visible même quand rien n'est encore assigné. Chaque groupe de pixels non assignés est en plus **encadré** d'un trait de couleur cerné de noir : `#00FF00` par défaut, réglable (bouton « Non assignés » : vert, magenta, cyan, jaune, rouge, orange, bleu, blanc, ou couleur libre), mémorisé dans le navigateur. Le cadre s'affiche avec la label map, et aussi dès que la QA pointe ces pixels (« Voir → », « Les voir »), calque allumé ou non ; la vue se cadre alors sur **tous** les pixels fautifs (plus grand zoom entier, ×16 au plus, qui les contient).
 - La label map se dessine à 60 % d'opacité par-dessus le sprite (réglable jusqu'à 100 % pour juger les couleurs pures).
 
 Vérification faite : simulation des trois dichromaties (matrices de Machado et al., sévérité maximale) sur les 8 teintes à 100 % d'opacité, plus petite distance ΔE (CIE76) entre deux teintes : vision normale 26, protanopie 21, deutéranopie 17, tritanopie 16. Avec le gris moyen `#999999` d'abord envisagé, le rose et le gris tombaient à 7 en deutéranopie : d'où le gris foncé. Non vérifié : test avec des personnes daltoniennes, et lisibilité à 60 % d'opacité sur des sprites très colorés (le numéro et le motif sont là pour ça).

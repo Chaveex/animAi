@@ -3,7 +3,7 @@
 
 import { h, $, mount, icon, fmtTime } from '../dom.js';
 import {
-  state, on, emit, setStep, setLayer, setView, undo, redo, canUndo, canRedo, backend, toast,
+  state, on, emit, setStep, setLayer, setView, setUnassignedColor, UNASSIGNED_DEFAULT, undo, redo, canUndo, canRedo, backend, toast,
   resolveConflict, retrySave, simulateClaude, importImage, loadExample, loadProject, isAnimStep, layerAvailable,
 } from '../store.js';
 import { setTool } from '../edits.js';
@@ -39,6 +39,18 @@ export const BACKGROUNDS = [
   { id: 'white', label: 'Blanc' },
 ];
 
+/** Palette du cadre des pixels non assignés : couleurs vives, rares dans un sprite. */
+const UNASSIGNED_COLORS = [
+  { hex: UNASSIGNED_DEFAULT, label: 'Vert (défaut)' },
+  { hex: '#FF00FF', label: 'Magenta' },
+  { hex: '#00FFFF', label: 'Cyan' },
+  { hex: '#FFFF00', label: 'Jaune' },
+  { hex: '#FF0000', label: 'Rouge' },
+  { hex: '#FF8000', label: 'Orange' },
+  { hex: '#0080FF', label: 'Bleu' },
+  { hex: '#FFFFFF', label: 'Blanc' },
+];
+
 // --- Thème -------------------------------------------------------------------------
 export function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
@@ -63,6 +75,7 @@ function syncLabel() {
 }
 
 let syncOpen = false;
+let colorOpen = false;
 
 function renderTopbar() {
   const ready = state.status === 'ready';
@@ -104,9 +117,15 @@ function renderTopbar() {
 }
 
 export function closePopovers() {
-  if (!syncOpen) return false;
-  syncOpen = false;
-  renderTopbar();
+  if (!syncOpen && !colorOpen) return false;
+  if (syncOpen) {
+    syncOpen = false;
+    renderTopbar();
+  }
+  if (colorOpen) {
+    colorOpen = false;
+    renderLayerbar();
+  }
   return true;
 }
 
@@ -171,6 +190,21 @@ function renderLayerbar() {
         // pas d'emit('view') : reconstruire la barre pendant le glisser casserait le curseur
         oninput: (e) => { state.labelOpacity = e.target.value / 100; viewport.requestDraw(); },
       })),
+    ready && layerAvailable('labelmap') && h('div', { class: 'bar-field color-wrap' },
+      h('button', {
+        class: 'chip', 'data-fid': 'unassigned-color', 'aria-expanded': String(colorOpen), 'aria-haspopup': 'true',
+        title: 'Couleur du cadre des pixels non assignés', onclick: () => { colorOpen = !colorOpen; renderLayerbar(); },
+      }, h('span', { class: 'px-swatch', style: { background: state.unassignedColor } }), 'Non assignés'),
+      colorOpen && h('div', { class: 'popover color-popover', role: 'group', 'aria-label': 'Couleur du cadre des pixels non assignés' },
+        h('div', { class: 'swatches' }, UNASSIGNED_COLORS.map((c) => h('button', {
+          class: 'swatch', 'data-fid': 'unassigned-color:' + c.hex, style: { background: c.hex },
+          'aria-pressed': String(state.unassignedColor === c.hex), 'aria-label': `${c.label} ${c.hex}`, title: `${c.label} ${c.hex}`,
+          onclick: () => setUnassignedColor(c.hex),
+        }))),
+        h('label', { class: 'color-custom' }, 'Autre',
+          // `change` (et non `input`) : reconstruire la barre pendant le choix fermerait le sélecteur
+          h('input', { type: 'color', value: state.unassignedColor.toLowerCase(), 'data-fid': 'unassigned-color-custom', onchange: (e) => setUnassignedColor(e.target.value) }),
+          h('code', {}, state.unassignedColor)))),
     painting && h('label', { class: 'bar-field' }, 'Taille',
       h('input', {
         type: 'number', class: 'num', min: '1', max: '16', step: '1', value: String(state.brushSize), 'data-fid': 'brush-size',
@@ -364,7 +398,7 @@ export function initChrome() {
   });
   on('announce', (text) => ($('#live').textContent = text));
   document.addEventListener('pointerdown', (e) => {
-    if (syncOpen && !e.target.closest('.sync-wrap')) closePopovers();
+    if ((syncOpen && !e.target.closest('.sync-wrap')) || (colorOpen && !e.target.closest('.color-wrap'))) closePopovers();
   });
   initDrop();
   renderTopbar();

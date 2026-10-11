@@ -2,7 +2,7 @@
 
 import { h, $, mount, icon } from '../dom.js';
 import { state, on, emit, exec, setCmd, setFrame, setStep, setLayer, frameCount, totalDuration, isAnimStep, retime } from '../store.js';
-import { hint } from '../edits.js';
+import { hint, newAnimation, captureFrame, deleteFrame } from '../edits.js';
 
 let timer = 0;
 
@@ -71,7 +71,9 @@ function render() {
   if (!n) {
     return mount(el, h('div', { class: 'tl-empty' },
       h('span', { class: 'muted' }, 'Aucune animation. '),
-      h('button', { class: 'link', 'data-fid': 'tl-go', onclick: () => setStep('animate') }, 'Choisir un preset à l\'étape Animer')));
+      h('button', { class: 'link', 'data-fid': 'tl-go', onclick: () => setStep('animate') }, 'Choisir un preset à l\'étape Animer'),
+      h('span', { class: 'muted' }, ' ou '),
+      h('button', { class: 'link', 'data-fid': 'tl-new', onclick: newAnimation }, 'créer une animation vide à poser à la main')));
   }
   const total = totalDuration();
   const cur = state.anim.frames[state.frame];
@@ -91,6 +93,8 @@ function render() {
       min: 1, max: 10000, unit: 'ms', title: 'Tenir cette frame plus ou moins longtemps',
       onchange: (v) => exec(setCmd('anim', ['frames', state.frame, 'duration_ms'], v, `Durée de la frame ${state.frame + 1}`)),
     }),
+    h('button', { class: 'btn', 'data-fid': 'tl-capture', title: 'Capturer la pose (K) : garde cette frame et ouvre, juste après, une copie à modifier', onclick: captureFrame }, '+ Capturer la pose'),
+    h('button', { class: 'btn', 'data-fid': 'tl-delete', disabled: n < 2, title: 'Supprimer la frame courante (annulable)', onclick: deleteFrame }, 'Supprimer la frame'),
     h('span', { class: 'spacer' }),
     h('span', { class: 'tl-render', id: 'tl-render', role: 'status' }),
     num('frames', 'Frames', n, { min: 1, max: 64, title: '4 à 8 recommandé en pixel art. Garde la durée totale ; les frames deviennent de même durée.', onchange: (v) => retime({ frames: v }) }),

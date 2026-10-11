@@ -27,7 +27,9 @@ export const SHORTCUTS = [
   { group: 'Outils', keys: 'V', label: 'Sélection (clic = pièce propriétaire du pixel, ou joint)', id: 'toolSelect', match: letter('v') },
   { group: 'Outils', keys: 'B', label: 'Pinceau : assigner des pixels à la pièce sélectionnée', id: 'toolBrush', match: letter('b') },
   { group: 'Outils', keys: 'E', label: 'Gomme : rendre des pixels non assignés', id: 'toolEraser', match: letter('e') },
-  { group: 'Outils', keys: 'J', label: 'Déplacer un joint (Rigger) ou décaler un os dans la frame (Animer)', id: 'toolJoint', match: letter('j') },
+  { group: 'Outils', keys: 'J', label: 'Déplacer un pivot (Rigger) ou poser le squelette en glissant les pivots (Animer)', id: 'toolJoint', match: letter('j') },
+  { group: 'Outils', keys: 'Double-clic', label: 'Outil Déplacer, étape Rigger : ajouter un pivot à cet endroit' },
+  { group: 'Outils', keys: 'Maj+glisser / Alt+glisser', label: 'Outil Déplacer, étape Animer : angle libre (sinon pas de 15°) / décaler l\'os au lieu de tourner' },
   { group: 'Outils', keys: 'Alt+clic', label: 'Pinceau / gomme : prendre la pièce sous le curseur' },
   { group: 'Outils', keys: 'H', label: 'Afficher / masquer l\'os ou la pièce sélectionnés', id: 'visibility', match: letter('h') },
 
@@ -60,9 +62,11 @@ export const SHORTCUTS = [
   { id: 'frameLast', match: named('End') },
   { group: 'Animation', keys: 'R / Maj+R', label: 'Tourner l\'os sélectionné de +15° / −15° dans la frame courante', id: 'rotPlus', match: letter('r') },
   { id: 'rotMinus', match: letter('r', { shift: true }) },
+  { group: 'Animation', keys: 'K', label: 'Capturer la pose : garder la frame et en ouvrir une copie à la suite', id: 'capture', match: letter('k') },
 
   { group: 'Hiérarchie', keys: '↑ ↓', label: 'Os ou pièce précédent / suivant (la sélection suit)' },
   { group: 'Hiérarchie', keys: '← →', label: 'Replier / déplier, remonter au parent' },
+  { group: 'Hiérarchie', keys: 'F2 / Suppr', label: 'Renommer / supprimer le pivot (os) qui a le focus' },
   { group: 'Timeline', keys: '← →', label: 'Frame précédente / suivante quand la bande de frames a le focus' },
   { group: 'Inspecteur', keys: 'Glisser sur un libellé', label: 'Faire varier la valeur ; ↑ ↓ dans le champ = ±1 pas' },
 ];

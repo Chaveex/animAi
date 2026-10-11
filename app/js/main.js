@@ -4,7 +4,7 @@ import { $ } from './dom.js';
 import { state, on, loadProject, loadExample, setStep, setLayer, setView, setSelection, undo, redo, frameCount, isAnimStep, backend } from './store.js';
 import { SHORTCUTS } from './shortcuts.js';
 import * as viewport from './viewport.js';
-import { moveJoint, editBoneKey, boneKey, setTool, toggleVisibility, hint } from './edits.js';
+import { moveJoint, editBoneKey, boneKey, setTool, toggleVisibility, hint, captureFrame } from './edits.js';
 import { initChrome, toggleTheme, toggleHelp, closePopovers, BACKGROUNDS } from './ui/chrome.js';
 import { initHierarchy } from './ui/hierarchy.js';
 import { initInspector } from './ui/inspector.js';
@@ -79,11 +79,12 @@ const ACTIONS = {
   background: cycleBackground,
   framePrev: () => stepFrame(-1), frameNext: () => stepFrame(1), frameFirst: () => gotoFrame(0), frameLast: () => gotoFrame(frameCount() - 1),
   rotPlus: () => rotate(15), rotMinus: () => rotate(-15),
+  capture: () => (isAnimStep() ? captureFrame() : hint('La capture de pose se fait à l\'étape Animer (touche 3).')),
 };
 
 const TYPING = 'input:not([type="range"]):not([type="checkbox"]), textarea, select, [contenteditable]';
 const ACTIVATES = 'button, a, summary, select, input, [role="treeitem"]';
-const NEEDS_PROJECT = /^(tool|layer|frame|rot|pan|zoom|fit|left|right|up|down|apply|visibility|background)/;
+const NEEDS_PROJECT = /^(tool|layer|frame|rot|capture|pan|zoom|fit|left|right|up|down|apply|visibility|background)/;
 let spaceDown = false;
 
 function onKeyDown(e) {

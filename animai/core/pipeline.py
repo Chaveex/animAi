@@ -290,8 +290,9 @@ def render_project(rig: dict, rgba: np.ndarray, anim: dict, source_indices: list
     if use_rest_offsets is None:
         use_rest_offsets = bool(anim.get("rest_offsets", False))
     offsets = rest_offsets(rig) if use_rest_offsets else {}
+    fill_radii = qa.joint_radii(rig, parts, rgba.shape[:2]) if rig.get("fill_holes", True) else None
     result = render.render_animation(rgba, rig, parts, anim, method=rotation, padding=padding, outline=outline,
-                                     offsets=offsets)
+                                     offsets=offsets, fill_radii=fill_radii)
     warnings += result.warnings
     if source_indices is None:
         source_indices = list(range(len(anim["frames"])))

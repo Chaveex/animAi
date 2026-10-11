@@ -4,7 +4,7 @@
 import { state, on, emit, exec, paintCmd, setSelection, targetPart, isAnimStep, frameCount, layerActive, toast, undo, beginGesture, endGesture } from './store.js';
 import { getFrame, silhouette } from './preview.js';
 import { labelStyle, labelPixel } from './label-palette.js';
-import { moveJoint, editBoneKey, boneKey, hint } from './edits.js';
+import { moveJoint, editBoneKey, boneKey, hint, addBone } from './edits.js';
 
 export const ZOOMS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 48, 64];
 const ONION_PREV = '#0072B2'; // bleu  : frame précédente
@@ -41,7 +41,7 @@ function makeCanvas(w, h) {
 
 /** Canvas label map + canvas « non assigné » + ancres des badges, depuis une carte de propriétaires. */
 function buildLabelLayers(w, h, ownerAt, opaqueAt) {
-  const lab = new ImageData(w, h), un = new ImageData(w, h), unList = [];
+  const lab = new ImageData(w, h), un = new ImageData(w, h), unList = [], unMask = new Uint8Array(w * h);
   const styles = state.partNames.map((_, k) => labelStyle(k));
   const hidden = state.partNames.map((n) => state.hiddenParts.has(n));
   const sum = state.partNames.map(() => [0, 0, 0]);
@@ -53,6 +53,7 @@ function buildLabelLayers(w, h, ownerAt, opaqueAt) {
       const v = (x + y) % 2 ? 255 : 0;
       un.data.set([v, v, v, 255], i * 4);
       unList.push(i);
+      unMask[i] = 1;
     } else if (!hidden[k] && styles[k]) {
       lab.data.set([...labelPixel(styles[k], x, y), 255], i * 4);
       sum[k][0] += x;
@@ -73,7 +74,7 @@ function buildLabelLayers(w, h, ownerAt, opaqueAt) {
   const a = makeCanvas(w, h), b = makeCanvas(w, h);
   a.getContext('2d').putImageData(lab, 0, 0);
   b.getContext('2d').putImageData(un, 0, 0);
-  return { label: a, unassigned: b, unList, width: w, anchors: best.map((v) => v[1]) };
+  return { label: a, unassigned: b, unList, unMask, width: w, height: h, anchors: best.map((v) => v[1]) };
 }
 
 function rebuildSprite() {
@@ -155,6 +156,77 @@ function jointPos(bone) {
   if (sc.entry && sc.entry.joints && sc.entry.joints[bone]) return sc.entry.joints[bone];
   return state.rig.bones[bone].joint;
 }
+
+// --- Poignées de pose (étape Animer) ---------------------------------------------------
+// Glisser le joint d'un os fait tourner son PARENT (le membre qui le porte). Un os sans enfant
+// (main, pied, tête) n'a pas de joint en aval : il reçoit une poignée « bout » (losange) posée
+// sur le pixel de ses pièces le plus éloigné de son joint ; la glisser le fait tourner lui-même.
+let tipCache = null;
+
+function restTips() {
+  if (tipCache) return tipCache;
+  const s = state.sprite, bones = state.rig.bones, tips = {}, best = {};
+  const leaf = new Set(Object.keys(bones));
+  for (const b of Object.keys(bones)) leaf.delete(bones[b].parent);
+  const boneOf = state.partNames.map((p) => state.rig.parts[p] && state.rig.parts[p].bone);
+  for (let i = 0; i < state.labels.length; i++) {
+    const k = state.labels[i];
+    if (k < 0) continue;
+    const b = boneOf[k];
+    if (!leaf.has(b) || !bones[b]) continue;
+    const x = i % s.width, y = (i - x) / s.width, d = (x - bones[b].joint[0]) ** 2 + (y - bones[b].joint[1]) ** 2;
+    if (!(b in best) || d > best[b]) {
+      best[b] = d;
+      tips[b] = [x, y];
+    }
+  }
+  for (const b of Object.keys(tips)) if (best[b] < 9) delete tips[b]; // collée au joint : inutilisable
+  return (tipCache = tips);
+}
+
+/** Angle monde de l'os dans la frame affichée (degrés, anti-horaire à l'écran). */
+function worldAngle(bone) {
+  const sc = scene();
+  if (sc.entry && sc.entry.angles && sc.entry.angles[bone] != null) return sc.entry.angles[bone];
+  let a = 0;
+  for (let b = bone, guard = 0; b && state.rig.bones[b] && guard < 64; b = state.rig.bones[b].parent, guard++) a += boneKey(b).rot;
+  return a;
+}
+
+/** Position de la poignée « bout » d'un os dans la frame affichée, ou null. */
+function tipPos(bone) {
+  const t = restTips()[bone];
+  if (!t) return null;
+  const [jx, jy] = jointPos(bone), r = state.rig.bones[bone].joint;
+  const a = (worldAngle(bone) * Math.PI) / 180, x = t[0] - r[0], y = t[1] - r[1];
+  return [jx + x * Math.cos(a) + y * Math.sin(a), jy - x * Math.sin(a) + y * Math.cos(a)];
+}
+
+/** Lecture seule, pour les tests automatisés : poignées « bout » de la frame affichée. */
+export const getTips = () => Object.fromEntries(Object.keys(restTips()).map((b) => [b, tipPos(b)]));
+
+function tipAt(pos) {
+  let best = null, bestD = (10 * unit()) ** 2;
+  for (const b of Object.keys(restTips())) {
+    if (state.hiddenBones.has(b) || !state.rig.bones[b]) continue;
+    const [tx, ty] = tipPos(b);
+    const d = (sx(tx + 0.5) - pos.px) ** 2 + (sy(ty + 0.5) - pos.py) ** 2;
+    if (d <= bestD) {
+      bestD = d;
+      best = b;
+    }
+  }
+  return best;
+}
+
+/** L'os est piloté par une chaîne IK dans la frame courante : sa rotation y est ignorée. */
+function ikLocked(bone) {
+  const f = state.anim && state.anim.frames[state.frame];
+  if (!f || !f.ik) return false;
+  return Object.entries(state.rig.ik || {}).some(([name, c]) => f.ik[name] && (c.chain || []).includes(bone));
+}
+
+const normDeg = (a) => ((((a + 180) % 360) + 360) % 360) - 180 || 0;
 
 function jointAt(pos) {
   if (!layerActive('skeleton') && !layerActive('pivots') && state.tool !== 'joint') return null;
@@ -239,12 +311,18 @@ export function panBy(dx, dy) {
   requestDraw();
 }
 
-/** Centre le viewport sur un groupe de pixels (QA) en garantissant un zoom lisible. */
+/**
+ * Cadre le viewport sur un groupe de pixels (QA) : le plus grand zoom, jusqu'à ×16, qui les montre
+ * TOUS. Des pixels épars (un par membre) resteraient sinon hors écran autour d'un centre vide.
+ */
 export function focusOn(pixels) {
   if (!pixels || !pixels.length) return;
   const xs = pixels.map((p) => p[0]), ys = pixels.map((p) => p[1]);
   const cx = (Math.min(...xs) + Math.max(...xs) + 1) / 2, cy = (Math.min(...ys) + Math.max(...ys) + 1) / 2;
-  if (zoom < 8) zoom = 8;
+  const bw = Math.max(...xs) - Math.min(...xs) + 1 + 8, bh = Math.max(...ys) - Math.min(...ys) + 1 + 8; // 4 px de marge
+  let z = ZOOMS[0];
+  for (const v of ZOOMS) if (v <= 16 && bw * v <= canvas.width && bh * v <= canvas.height) z = v;
+  zoom = z;
   autoFit = false;
   panX = Math.round(canvas.width / 2 - cx * zoom);
   panY = Math.round(canvas.height / 2 - cy * zoom);
@@ -399,12 +477,33 @@ function onDown(e) {
   const tool = state.tool;
   if (tool === 'select') pick(pos);
   else if (tool === 'joint') {
+    const tip = isAnimStep() && frameCount() ? tipAt(pos) : null;
+    if (tip) {
+      setSelection({ kind: 'bone', id: tip });
+      if (ikLocked(tip)) return hint(`« ${tip} » est piloté par une chaîne IK dans cette frame : sa rotation est ignorée.`);
+      drag = { type: 'pose', bone: tip, pivot: jointPos(tip), from: tipPos(tip), base: boneKey(tip).rot, rot: boneKey(tip).rot };
+      beginGesture();
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
     const b = jointAt(pos);
-    if (!b) return hint('Cliquez sur un joint (rond) pour le saisir, ou utilisez les flèches sur l\'os sélectionné.');
+    if (!b) {
+      return hint(isAnimStep()
+        ? 'Glissez un pivot (rond) pour faire tourner le membre qui le porte, ou un losange pour tourner le bout d\'un membre. Alt+glisser décale.'
+        : 'Glissez un pivot (rond) pour le déplacer ; double-clic dans le vide pour en ajouter un.');
+    }
     setSelection({ kind: 'bone', id: b });
     if (isAnimStep()) {
       if (!frameCount()) return;
-      drag = { type: 'key', bone: b, from: pos, cur: pos, base: boneKey(b).pos };
+      const target = state.rig.bones[b].parent;
+      const pivot = target && state.rig.bones[target] ? jointPos(target) : null, from = jointPos(b);
+      // Alt, racine, ou joint confondu avec celui du parent : on décale l'os au lieu de tourner.
+      if (e.altKey || !pivot || Math.hypot(from[0] - pivot[0], from[1] - pivot[1]) < 1) {
+        drag = { type: 'key', bone: b, from: pos, cur: pos, base: boneKey(b).pos };
+      } else {
+        if (ikLocked(target)) return hint(`« ${target} » est piloté par une chaîne IK dans cette frame : sa rotation est ignorée. Alt+glisser décale l'os.`);
+        drag = { type: 'pose', bone: target, pivot, from, base: boneKey(target).rot, rot: boneKey(target).rot };
+      }
     } else drag = { type: 'joint', bone: b, start: [...state.rig.bones[b].joint], cur: [...state.rig.bones[b].joint] };
     beginGesture();
     canvas.setPointerCapture(e.pointerId);
@@ -444,6 +543,18 @@ function onMove(e) {
       emit('rig');
     }
   } else if (drag && drag.type === 'key') drag.cur = pos;
+  else if (drag && drag.type === 'pose') {
+    // coordonnées flottantes, dans le repère des joints (centre du pixel)
+    const fx = (pos.px - panX) / zoom - 0.5, fy = (pos.py - panY) / zoom - 0.5;
+    const { pivot, from } = drag;
+    if (Math.hypot(fx - pivot[0], fy - pivot[1]) >= 0.5) {
+      // atan2 croît dans le sens horaire à l'écran ; `rot` est positif en anti-horaire
+      const turn = Math.atan2(fy - pivot[1], fx - pivot[0]) - Math.atan2(from[1] - pivot[1], from[0] - pivot[0]);
+      const rot = drag.base - (turn * 180) / Math.PI;
+      // pas de 15° par défaut (angles discrets : le pixel art reste propre) ; Maj = angle libre, au degré
+      drag.rot = normDeg(e.shiftKey ? Math.round(rot) : Math.round(rot / 15) * 15);
+    }
+  }
   requestDraw();
 }
 
@@ -467,6 +578,8 @@ function onUp(e) {
   } else if (d.type === 'key' && e.type !== 'pointercancel') {
     const dx = d.cur.x - d.from.x, dy = d.cur.y - d.from.y;
     if (dx || dy) editBoneKey(d.bone, { pos: [d.base[0] + dx, d.base[1] + dy] });
+  } else if (d.type === 'pose' && e.type !== 'pointercancel') {
+    if (d.rot !== d.base) editBoneKey(d.bone, { rot: d.rot });
   }
   endGesture();
   updateCursorStyle();
@@ -526,6 +639,29 @@ function pixelBox(x, y, w, h, u) {
   ctx.strokeRect(sx(x) - u * 1.5, sy(y) - u * 1.5, w * zoom + 3 * u, h * zoom + 3 * u);
   ctx.strokeStyle = '#fff';
   ctx.strokeRect(sx(x) - u * 0.5, sy(y) - u * 0.5, w * zoom + u, h * zoom + u);
+}
+
+/**
+ * Cadre les pixels non assignés : contour de chaque groupe, de la couleur choisie, cerné de noir
+ * pour rester lisible sur toute couleur du sprite. Le trait est à cheval sur le bord des pixels.
+ */
+function outlineUnassigned(layers, ax, ay, u) {
+  const w = layers.width, h = layers.height, m = layers.unMask;
+  const t = Math.max(2 * u, Math.round(zoom / 5));
+  const segs = [];
+  for (const i of layers.unList) {
+    const x = i % w, y = (i - x) / w, px = ax + x * zoom, py = ay + y * zoom;
+    if (px < -zoom || py < -zoom || px > canvas.width || py > canvas.height) continue;
+    if (y === 0 || !m[i - w]) segs.push([px, py, zoom, 0]);
+    if (y === h - 1 || !m[i + w]) segs.push([px, py + zoom, zoom, 0]);
+    if (x === 0 || !m[i - 1]) segs.push([px, py, 0, zoom]);
+    if (x === w - 1 || !m[i + 1]) segs.push([px + zoom, py, 0, zoom]);
+  }
+  for (const [color, k] of [['#000', t + 2 * u], [state.unassignedColor, t]]) {
+    const a = Math.floor(k / 2);
+    ctx.fillStyle = color;
+    for (const [x, y, lw, lh] of segs) ctx.fillRect(x - a, y - a, lw + k, lh + k);
+  }
 }
 
 function draw() {
@@ -641,6 +777,24 @@ function draw() {
       ctx.fill();
       ctx.stroke();
     }
+    if (sc.entry && state.tool === 'joint') {
+      for (const b of Object.keys(restTips())) {
+        if (state.hiddenBones.has(b) || !state.rig.bones[b]) continue;
+        const [tx, ty] = tipPos(b);
+        const x = sx(tx + 0.5), y = sy(ty + 0.5), r = (b === sel ? 7 : 5) * u;
+        ctx.fillStyle = b === sel ? accent : '#fff';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2 * u;
+        ctx.beginPath();
+        ctx.moveTo(x, y - r);
+        ctx.lineTo(x + r, y);
+        ctx.lineTo(x, y + r);
+        ctx.lineTo(x - r, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
     const pv = exportPivot(sc);
     if (pv) {
       const px = sx(pv[0]), py = sy(pv[1]), k = 7 * u;
@@ -692,9 +846,12 @@ function draw() {
 
   // 8. problème QA localisé
   const q = state.qaFocus;
+  // Pixels non assignés : cadrés avec la label map, et dès que la QA les pointe (calque éteint ou non)
+  const lost = q && q.id === 'parts_assigned';
+  if (layers && layers.unList.length && state.step !== 'prepare' && (L.labelmap || lost)) outlineUnassigned(layers, ax, ay, u);
   if (q && q.pixels.length && (q.frame == null || (q.rest ? !sc.entry : sc.entry && q.frame === state.frame))) {
     const px = q.pixels.slice(0, 400);
-    for (const [x, y] of px) pixelBox(x, y, 1, 1, u);
+    if (!lost) for (const [x, y] of px) pixelBox(x, y, 1, 1, u);
     const xs = px.map((p) => p[0]), ys = px.map((p) => p[1]);
     const cx = sx((Math.min(...xs) + Math.max(...xs) + 1) / 2), cy = sy((Math.min(...ys) + Math.max(...ys) + 1) / 2);
     const r = Math.hypot(Math.max(...xs) - Math.min(...xs) + 1, Math.max(...ys) - Math.min(...ys) + 1) * zoom / 2 + 12 * u;
@@ -713,6 +870,30 @@ function draw() {
   else if (hv && hv.inside && (state.tool === 'brush' || state.tool === 'eraser') && state.step === 'rig') {
     const n = state.brushSize, off = Math.floor((n - 1) / 2);
     pixelBox(hv.x - off, hv.y - off, n, n, u);
+  }
+  if (drag && drag.type === 'pose') {
+    const { pivot, from } = drag;
+    const len = Math.hypot(from[0] - pivot[0], from[1] - pivot[1]);
+    const a = Math.atan2(from[1] - pivot[1], from[0] - pivot[0]) - ((drag.rot - drag.base) * Math.PI) / 180;
+    const x0 = sx(pivot[0] + 0.5), y0 = sy(pivot[1] + 0.5);
+    const x1 = sx(pivot[0] + 0.5 + len * Math.cos(a)), y1 = sy(pivot[1] + 0.5 + len * Math.sin(a));
+    line(x0, y0, x1, y1, '#000', 4 * u);
+    line(x0, y0, x1, y1, accent, 2 * u);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4 * u;
+    ctx.beginPath();
+    ctx.arc(x1, y1, 6 * u, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2 * u;
+    ctx.stroke();
+    const d = normDeg(drag.rot - drag.base);
+    const text = `${drag.bone} ${drag.rot}° (${d > 0 ? '+' : ''}${d}°)`, w = ctx.measureText(text).width + 8 * u;
+    const tx = Math.round(Math.min(cw - w - 4 * u, x1 + 12 * u)), ty = Math.round(Math.max(4 * u, y1 - 22 * u));
+    ctx.fillStyle = '#000';
+    ctx.fillRect(tx, ty, w, 16 * u);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(text, tx + w / 2, ty + 8 * u + u * 0.5);
   }
   if (drag && drag.type === 'key') {
     const [jx, jy] = jointPos(drag.bone);
@@ -769,6 +950,13 @@ export function initViewport(el) {
     if (!kbd) setHover(null);
     requestDraw();
   });
+  // Double-clic dans le vide avec l'outil Déplacer, à l'étape Rigger : nouveau pivot à cet endroit.
+  canvas.addEventListener('dblclick', (e) => {
+    if (state.status !== 'ready' || state.step !== 'rig' || state.tool !== 'joint') return;
+    const pos = eventPos(e), s = state.sprite;
+    if (jointAt(pos) || pos.x < 0 || pos.y < 0 || pos.x >= s.width || pos.y >= s.height) return;
+    addBone([pos.x, pos.y]);
+  });
   canvas.addEventListener('wheel', onWheel, { passive: false });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('auxclick', (e) => e.preventDefault());
@@ -782,6 +970,7 @@ export function initViewport(el) {
     if (state.status === 'ready') fit();
     requestDraw();
   });
+  on('project rig labels', () => (tipCache = null));
   on('labels visibility', () => {
     rebuildLabels();
     requestDraw();

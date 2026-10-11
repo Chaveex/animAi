@@ -2,7 +2,7 @@
 
 import { h, $, mount, icon } from '../dom.js';
 import { state, on, setSelection, partsOfBone } from '../store.js';
-import { toggleVisibility } from '../edits.js';
+import { toggleVisibility, addBone, addPart, deleteBone, hint } from '../edits.js';
 import { labelStyle, swatchCss } from '../label-palette.js';
 
 const collapsed = new Set();
@@ -37,6 +37,9 @@ function render() {
   buildRows();
   const anySelected = rows.some(isSelected);
   $('#tree-count').textContent = `${Object.keys(state.rig.bones).length} os · ${state.partNames.length} pièces`;
+  mount($('#tree-actions'),
+    h('button', { class: 'btn small', 'data-fid': 'add-bone', title: 'Ajouter un pivot (os), enfant de l\'os sélectionné. Aussi : double-clic dans le viewport avec l\'outil Déplacer.', onclick: () => addBone() }, '+ Pivot'),
+    h('button', { class: 'btn small', 'data-fid': 'add-part', title: 'Ajouter une pièce vide sur l\'os sélectionné, à peindre au pinceau', onclick: () => addPart() }, '+ Pièce'));
   mount(el, rows.map((r, i) => {
     const selected = isSelected(r);
     const hidden = (r.kind === 'bone' ? state.hiddenBones : state.hiddenParts).has(r.id);
@@ -72,6 +75,7 @@ function render() {
       tabindex: selected || (!anySelected && i === 0) ? '0' : '-1',
       style: { paddingLeft: 4 + (r.level - 1) * 12 + 'px' },
       onclick: () => select(r),
+      ondblclick: () => r.kind === 'bone' && focusRename(),
     }, body, eye);
   }));
 }
@@ -84,6 +88,14 @@ function select(r) {
 function focusRow(key) {
   const el = $(`#tree [data-fid="${CSS.escape(key)}"]`);
   if (el) el.focus();
+}
+
+/** Renommer : le champ « Nom » de l'inspecteur (une seule façon de saisir un nom, annulable). */
+function focusRename() {
+  const input = $('#f-bone-name');
+  if (!input) return;
+  input.focus();
+  input.select();
 }
 
 function toggle(r) {
@@ -115,6 +127,18 @@ function onKey(e) {
     case ' ':
       to = r;
       break;
+    case 'F2':
+      if (r.kind !== 'bone') return;
+      e.preventDefault();
+      select(r);
+      return focusRename();
+    case 'Delete': {
+      if (r.kind !== 'bone') return;
+      e.preventDefault();
+      const err = deleteBone(r.id);
+      if (err) hint(err);
+      return;
+    }
     default: return;
   }
   e.preventDefault();
@@ -124,6 +148,7 @@ function onKey(e) {
 
 export function initHierarchy() {
   $('#tree').addEventListener('keydown', onKey);
+  on('status', () => state.status !== 'ready' && $('#tree-actions').replaceChildren());
   on('status project rig selection visibility', render);
   render();
 }

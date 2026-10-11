@@ -5,7 +5,7 @@ import {
   state, on, exec, setCmd, setStep, setSelection, frameCount, totalDuration, partsOfBone, unassignedCount,
   isAnimStep, applyPreset, backend, exportProject, handRegionParts,
 } from '../store.js';
-import { moveJoint, boneKey, editBoneKey, editFrameZ } from '../edits.js';
+import { moveJoint, boneKey, editBoneKey, editFrameZ, renameBone, deleteBone, reparentBone, boneSubtree, newAnimation, renameAnim, hint } from '../edits.js';
 import { labelStyle, swatchCss } from '../label-palette.js';
 import { getFrame } from '../preview.js';
 import { locateUnassigned } from './qa.js';
@@ -111,7 +111,7 @@ function stepCard() {
     const un = unassignedCount();
     return h('section', { class: 'card', 'aria-labelledby': 'step-title' },
       h('h2', { id: 'step-title' }, '2 · Rigger'),
-      h('p', {}, 'Chaque pixel appartient à une seule pièce rigide. Sélectionnez une pièce, peignez ses pixels (B), placez les joints (J).'),
+      h('p', {}, 'Chaque pixel appartient à une seule pièce rigide. Sélectionnez une pièce, peignez ses pixels (B), placez les pivots (J). « + Pivot » en ajoute un, l\'inspecteur le renomme ou le supprime.'),
       un
         ? h('p', { class: 'note warn' }, `${un} pixel${un > 1 ? 's' : ''} non assigné${un > 1 ? 's' : ''}. `,
           h('button', { class: 'link', 'data-fid': 'see-unassigned', onclick: locateUnassigned }, 'Les voir'))
@@ -124,11 +124,18 @@ function stepCard() {
     return h('section', { class: 'card', 'aria-labelledby': 'step-title' },
       h('h2', { id: 'step-title' }, '3 · Animer'),
       h('p', {}, state.anim
-        ? 'Parcourez les frames (, et .), sélectionnez un os puis réglez sa rotation et son décalage dans l\'inspecteur.'
-        : 'Aucune animation pour l\'instant : appliquez un preset pour commencer.'),
+        ? 'Outil Déplacer (J) : glissez un pivot pour faire tourner le membre qui le porte, un losange pour le bout d\'un membre (pas de 15° ; Maj = angle libre, Alt = décaler). « Capturer la pose » (K) garde la frame et en ouvre une copie.'
+        : 'Aucune animation pour l\'instant : appliquez un preset, ou partez d\'une animation vide et posez-la à la main.'),
+      state.anim && h('div', { class: 'field' }, h('label', { for: 'f-anim-name' }, 'Nom'),
+        h('span', { class: 'field-input' }, h('input', {
+          type: 'text', class: 'txt', id: 'f-anim-name', 'data-fid': 'anim-name', value: state.anim.name || '', spellcheck: 'false', autocomplete: 'off',
+          title: 'Nom de l\'animation (écrit dans anim.json et dans l\'export)',
+          onkeydown: (e) => e.key === 'Enter' && e.target.blur(), onchange: (e) => renameAnim(e.target.value),
+        }))),
       h('div', { class: 'field' }, h('label', { for: 'f-preset' }, 'Preset'),
         h('span', { class: 'field-input' }, select,
           h('button', { class: 'btn', 'data-fid': 'apply-preset', title: 'Remplace l\'animation courante (annulable)', onclick: () => applyPreset(select.value) }, 'Appliquer'))),
+      h('button', { class: 'btn', 'data-fid': 'new-anim', title: 'Une frame au repos, à poser en glissant les pivots. Remplace l\'animation courante (annulable).', onclick: newAnimation }, 'Nouvelle animation vide'),
       backend.isDemo && h('p', { class: 'note' }, 'Démo : presets et aperçu sont des versions simplifiées. Le rendu réel (rotation propre, IK, anti-trous) viendra du cœur.'),
       state.anim && next('export', 'Exporter'));
   }
@@ -183,9 +190,27 @@ function boneInspector(bone) {
   const b = state.rig.bones[bone];
   const parts = partsOfBone(bone);
   const ik = Object.entries(state.rig.ik || {}).filter(([, c]) => (c.chain || []).includes(bone) || c.target_bone === bone).map(([k]) => k);
+  const nameInput = h('input', {
+    type: 'text', class: 'txt', id: 'f-bone-name', 'data-fid': 'bone-name', value: bone, spellcheck: 'false', autocomplete: 'off',
+    title: 'Renommer ce pivot (F2). Entrée pour valider.',
+    onkeydown: (e) => e.key === 'Enter' && nameInput.blur(),
+    onchange: () => {
+      const err = renameBone(bone, nameInput.value);
+      if (!err) return;
+      hint(err);
+      nameInput.value = bone;
+    },
+  });
+  const below = boneSubtree(bone);
+  const root = !b.parent || !state.rig.bones[b.parent];
   const out = [
-    h('h3', {}, 'Os · ', h('code', {}, bone)),
-    info('Parent', b.parent || '— (racine)'),
+    h('h3', {}, 'Pivot (os) · ', h('code', {}, bone)),
+    h('div', { class: 'field' }, h('label', { for: 'f-bone-name' }, 'Nom'), h('span', { class: 'field-input' }, nameInput)),
+    root
+      ? info('Parent', '— (racine)')
+      : h('div', { class: 'field' }, h('label', { for: 'f-bone-parent' }, 'Parent'),
+        h('select', { id: 'f-bone-parent', 'data-fid': 'bone-parent', title: 'Le pivot suit les mouvements de son parent', onchange: (e) => reparentBone(bone, e.target.value) },
+          Object.keys(state.rig.bones).filter((o) => !below.includes(o)).map((o) => h('option', { value: o, selected: b.parent === o }, o)))),
     numField({ fid: 'joint-x', label: 'Joint X', unit: 'px', min: 0, max: state.sprite.width - 1, get: () => state.rig.bones[bone].joint[0], set: (v, m) => moveJoint(bone, [v, state.rig.bones[bone].joint[1]], m) }),
     numField({ fid: 'joint-y', label: 'Joint Y', unit: 'px', min: 0, max: state.sprite.height - 1, get: () => state.rig.bones[bone].joint[1], set: (v, m) => moveJoint(bone, [state.rig.bones[bone].joint[0], v], m) }),
     info('IK', ik.length ? `chaîne ${ik.join(', ')} (lecture seule)` : 'non'),
@@ -193,7 +218,11 @@ function boneInspector(bone) {
     h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Pièces'),
       h('span', { class: 'field-value' }, parts.length
         ? parts.map((p) => h('button', { class: 'link', onclick: () => setSelection({ kind: 'part', id: p }) }, p))
-        : 'aucune')),
+        : 'aucune (rattachez une pièce : champ « Os » de la pièce, ou « + Pièce »)')),
+    !root && h('button', {
+      class: 'btn', 'data-fid': 'bone-delete', title: 'Ses pièces et ses enfants passent à son parent (Suppr dans la hiérarchie). Annulable.',
+      onclick: () => { const err = deleteBone(bone); if (err) hint(err); },
+    }, 'Supprimer ce pivot'),
   ];
   if (isAnimStep() && frameCount()) {
     out.push(
@@ -250,7 +279,8 @@ function render() {
   }
   fields = [];
   mount($('#stepcard'), stepCard());
-  const sel = state.selection;
+  let sel = state.selection;
+  if (sel && !(sel.kind === 'bone' ? state.rig.bones[sel.id] : state.rig.parts[sel.id])) sel = null; // os ou pièce disparu entre-temps
   mount(el,
     h('h2', {}, 'Inspecteur'),
     !sel

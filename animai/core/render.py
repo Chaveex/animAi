@@ -11,7 +11,7 @@ import numpy as np
 
 from .errors import AnimaiError
 from .kinematics import BonePose, normalize_angle, round_half_up, solve_pose
-from .morph import dilate4
+from .morph import components, dilate4, enclosed_transparent
 from .rig import (OUTLINE_MODES, UNASSIGNED, LabelMap, Part, detect_outline_color, outline_setting,
                   silhouette_border)
 from .rotate import rotate_part
@@ -162,6 +162,114 @@ def apply_outline(frame: np.ndarray, layers: list[Layer], origin: tuple[int, int
     return out
 
 
+SEAM_MAX_AREA = 4      # px: largest closed void between two parts that is treated as a crack
+
+
+def hole_patches(layers: list[Layer], origin: tuple[int, int], size: tuple[int, int],
+                 pose: dict[str, BonePose], radii: dict[str, int], sprite: np.ndarray,
+                 outline_color: int | None = None) -> tuple[list[Layer], int]:
+    """Layers that fill the holes a pose opens, and the number of pixels filled.
+
+    Two kinds of hole are filled, never legitimate negative space:
+
+    1. *Open articulation*: a transparent pixel inside the disc that must stay
+       opaque around a joint (``radii``, the ``joints`` of ``frames.json``).
+    2. *Crack*: a closed transparent region of at most ``SEAM_MAX_AREA`` pixels
+       bordered by at least two different parts. A region that is already a closed
+       void of the sprite, at the same place and with unchanged pixels around it,
+       is left alone: the rest pose is never modified.
+
+    A filled pixel copies an opaque 4-neighbour: a colour other than the outline
+    colour when there is a choice, then the part drawn furthest behind (the body
+    continues under the limb), then up, left, right, down. Filling proceeds
+    inwards one ring at a time. Only palette colours are written. The result is one
+    layer per owning part, to append on top of ``layers``.
+    """
+    w, h = size
+    frame = compose(layers, origin, size)
+    opaque = frame[..., 3] > 0
+    names: list[str] = []
+    for layer in layers:
+        if layer.part not in names:
+            names.append(layer.part)              # back to front: the index is the depth rank
+    owners = compose_owners(layers, origin, size, {n: i for i, n in enumerate(names)})
+
+    target = np.zeros((h, w), dtype=bool)
+    for bone, radius in radii.items():
+        if bone not in pose:
+            continue
+        jx = round_half_up(pose[bone].pos[0]) - origin[0]
+        jy = round_half_up(pose[bone].pos[1]) - origin[1]
+        for dy in range(-radius, radius + 1):
+            for dx in range(-radius, radius + 1):
+                x, y = jx + dx, jy + dy
+                if dx * dx + dy * dy <= radius * radius and 0 <= x < w and 0 <= y < h and not opaque[y, x]:
+                    target[y, x] = True
+
+    sh, sw = sprite.shape[:2]
+    sprite_void = enclosed_transparent(sprite[..., 3] > 0)
+    sprite_rgb = pack_rgb(sprite)
+    rgb = pack_rgb(frame)
+
+    def unchanged(x: int, y: int) -> bool:
+        sx, sy = x + origin[0], y + origin[1]
+        return 0 <= sx < sw and 0 <= sy < sh and sprite[sy, sx, 3] > 0 and sprite_rgb[sy, sx] == rgb[y, x]
+
+    for comp in components(enclosed_transparent(opaque)):
+        if len(comp) > SEAM_MAX_AREA:
+            continue
+        around = {(x + dx, y + dy) for x, y in comp for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1))}
+        around = [(x, y) for x, y in around if 0 <= x < w and 0 <= y < h and opaque[y, x]]
+        if len({int(owners[y, x]) for x, y in around}) < 2:
+            continue                              # a void inside one part is its own shape
+        at_rest = all(0 <= x + origin[0] < sw and 0 <= y + origin[1] < sh
+                      and sprite_void[y + origin[1], x + origin[0]] for x, y in comp)
+        if at_rest and all(unchanged(x, y) for x, y in around):
+            continue
+        for x, y in comp:
+            target[y, x] = True
+
+    out = frame.copy()
+    own = owners.copy()
+    pending = [(int(x), int(y)) for y, x in zip(*np.nonzero(target))]
+    filled: list[tuple[int, int]] = []
+    while pending:
+        ring = []
+        for x, y in pending:
+            best = None
+            for k, (dx, dy) in enumerate(((0, -1), (-1, 0), (1, 0), (0, 1))):
+                nx, ny = x + dx, y + dy
+                if not (0 <= nx < w and 0 <= ny < h) or out[ny, nx, 3] == 0:
+                    continue
+                colour = (int(out[ny, nx, 0]) << 16) | (int(out[ny, nx, 1]) << 8) | int(out[ny, nx, 2])
+                key = (colour == outline_color, int(own[ny, nx]), k)
+                if best is None or key < best[0]:
+                    best = (key, nx, ny)
+            if best is not None:
+                ring.append((x, y, best[1], best[2]))
+        if not ring:
+            break                                 # nothing opaque around what is left: not ours to fill
+        values = [(x, y, out[ny, nx].copy(), own[ny, nx]) for x, y, nx, ny in ring]
+        for x, y, pixel, owner in values:         # a ring is written at once: no pixel feeds its own ring
+            out[y, x] = pixel
+            own[y, x] = owner
+            filled.append((x, y))
+        done = {(x, y) for x, y, _, _ in ring}
+        pending = [p for p in pending if p not in done]
+
+    patches: list[Layer] = []
+    top = max((layer.z for layer in layers), default=0)
+    for index in sorted({int(own[y, x]) for x, y in filled}):
+        pts = [(x, y) for x, y in filled if own[y, x] == index]
+        x0, y0 = min(p[0] for p in pts), min(p[1] for p in pts)
+        x1, y1 = max(p[0] for p in pts), max(p[1] for p in pts)
+        image = np.zeros((y1 - y0 + 1, x1 - x0 + 1, 4), dtype=np.uint8)
+        for x, y in pts:
+            image[y - y0, x - x0] = out[y, x]
+        patches.append(Layer(top, len(layers) + len(patches), image, (x0 + origin[0], y0 + origin[1]), names[index]))
+    return patches, len(filled)
+
+
 def finish_frame(result: "RenderResult", layers: list[Layer]) -> np.ndarray:
     """Compose a layer stack on the canvas of ``result`` and run the outline pass."""
     frame = compose(layers, result.origin, result.canvas)
@@ -254,11 +362,14 @@ def render_rest(rgba: np.ndarray, rig: dict, parts: list[Part]) -> np.ndarray:
 
 def render_animation(rgba: np.ndarray, rig: dict, parts: list[Part], anim: dict, *,
                      method: str = "rotsprite", padding: int = 2,
-                     outline: OutlineSpec | None = None, offsets: dict | None = None) -> RenderResult:
+                     outline: OutlineSpec | None = None, offsets: dict | None = None,
+                     fill_radii: dict[str, int] | None = None) -> RenderResult:
     """Render every frame of ``anim`` on a constant canvas with a stable pivot.
 
     ``outline`` (from ``outline_spec``) enables the outline pass on every frame.
     ``offsets`` (rest offsets, ``{bone: [dx, dy]}``) are applied to every frame.
+    ``fill_radii`` (``qa.joint_radii``; None = off) enables the hole filling pass,
+    see ``hole_patches``; it runs before the outline pass.
     """
     if padding < 0:
         raise AnimaiError("padding must be >= 0")
@@ -285,6 +396,17 @@ def render_animation(rgba: np.ndarray, rig: dict, parts: list[Part], anim: dict,
         raise AnimaiError("animation renders no pixel")
     result = RenderResult([], size, origin, (px - origin[0], py - origin[1]), poses, warnings, stacks,
                           outline, rgba)
+    if fill_radii is not None:
+        counts = []
+        for index, layers in enumerate(stacks):
+            patches, count = hole_patches(layers, origin, size, poses[index], fill_radii, rgba,
+                                          None if outline is None else outline.color)
+            layers.extend(patches)
+            if count:
+                counts.append(f"frame {index}: {count} px")
+        if counts:
+            warnings.append("holes filled automatically (\"fill_holes\": false in rig.json to keep them): "
+                            + ", ".join(counts))
     result.frames = [finish_frame(result, layers) for layers in stacks]
     return result
 
