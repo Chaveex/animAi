@@ -1,0 +1,123 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "id": "palette",
+      "pass": true,
+      "detail": "10 colours used, source palette has 10",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "alpha_binary",
+      "pass": true,
+      "detail": "",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "orphans",
+      "pass": true,
+      "detail": "source sprite has 0 isolated pixels",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "holes",
+      "pass": true,
+      "detail": "12 articulations checked",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "pivot_stable",
+      "pass": true,
+      "detail": "pivot [17, 59]",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "canvas_constant",
+      "pass": true,
+      "detail": "canvas [36, 61]",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "loop_closed",
+      "pass": true,
+      "detail": "last -> first changes 434 pixels, largest step 470",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "parts_assigned",
+      "pass": true,
+      "detail": "",
+      "frame": null,
+      "pixel": null
+    }
+  ],
+  "metrics": {
+    "unmonitored_joints": [
+      "arm_l",
+      "foot_r",
+      "forearm_l",
+      "forearm_r",
+      "shin_r",
+      "thigh_r"
+    ],
+    "outline": null,
+    "frames": [
+      {
+        "border": 196,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 179,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 151,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 153,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 163,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 150,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 142,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 179,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      }
+    ]
+  },
+  "warnings": []
+}

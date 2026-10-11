@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "outputs": {
+    "overlay": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\rig_overlay.png",
+    "labelmap": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\labelmap.png",
+    "parts_sheet": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts_sheet.png",
+    "report": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\rig_report.json",
+    "parts": {
+      "arm_l": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\arm_l.png",
+      "forearm_l": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\forearm_l.png",
+      "hand_l": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\hand_l.png",
+      "thigh_l": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\thigh_l.png",
+      "shin_l": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\shin_l.png",
+      "foot_l": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\foot_l.png",
+      "hips": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\hips.png",
+      "thigh_r": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\thigh_r.png",
+      "shin_r": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\shin_r.png",
+      "foot_r": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\foot_r.png",
+      "torso": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\torso.png",
+      "head": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\head.png",
+      "arm_r": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\arm_r.png",
+      "forearm_r": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\forearm_r.png",
+      "hand_r": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\rig\\parts\\hand_r.png"
+    },
+    "unassigned_count": 0,
+    "multi_assigned_count": 0,
+    "rest_pose_exact": true,
+    "pivot": [
+      50,
+      90
+    ]
+  },
+  "warnings": [],
+  "error": null
+}

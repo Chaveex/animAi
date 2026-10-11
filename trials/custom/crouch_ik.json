@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "name": "crouch_ik",
+  "loop": false,
+  "fps": 10,
+  "frames": [
+    {"duration_ms": 100,
+     "bones": {"hips": {"pos": [0, 0]}},
+     "ik": {"foot_r": {"pos": [0, 0], "rot": 0}, "foot_l": {"pos": [0, 0], "rot": 0}}},
+    {"duration_ms": 100,
+     "bones": {"hips": {"pos": [0, 3]}, "spine": {"rot": -15}, "head": {"rot": 15},
+               "arm_r": {"rot": 30}, "forearm_r": {"rot": 30}, "arm_l": {"rot": 30}},
+     "ik": {"foot_r": {"pos": [0, 0], "rot": 0}, "foot_l": {"pos": [0, 0], "rot": 0}}},
+    {"duration_ms": 400,
+     "bones": {"hips": {"pos": [-1, 7]}, "spine": {"rot": -15}, "head": {"rot": 15},
+               "arm_r": {"rot": 45}, "forearm_r": {"rot": 45}, "arm_l": {"rot": 45}},
+     "ik": {"foot_r": {"pos": [0, 0], "rot": 0}, "foot_l": {"pos": [0, 0], "rot": 0}}},
+    {"duration_ms": 100,
+     "bones": {"hips": {"pos": [0, 3]}, "spine": {"rot": -15}, "head": {"rot": 15},
+               "arm_r": {"rot": 30}, "forearm_r": {"rot": 30}, "arm_l": {"rot": 30}},
+     "ik": {"foot_r": {"pos": [0, 0], "rot": 0}, "foot_l": {"pos": [0, 0], "rot": 0}}},
+    {"duration_ms": 100,
+     "bones": {"hips": {"pos": [0, 0]}},
+     "ik": {"foot_r": {"pos": [0, 0], "rot": 0}, "foot_l": {"pos": [0, 0], "rot": 0}}}
+  ]
+}

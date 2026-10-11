@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>animAI — Éditeur</title>
+  <script>
+    // Thème appliqué avant le premier rendu (choix mémorisé, sinon préférence système).
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('animai.theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="app" class="app" data-status="loading">
+    <header id="topbar" class="topbar"></header>
+    <div id="banner" class="banner" role="alert" hidden></div>
+
+    <main class="workspace">
+      <div id="toolrail" class="toolrail" role="toolbar" aria-label="Outils" aria-orientation="vertical"></div>
+
+      <aside class="panel panel-left" aria-labelledby="tree-title">
+        <div class="panel-head"><h2 id="tree-title">Hiérarchie</h2><span id="tree-count" class="muted"></span></div>
+        <div id="tree" class="tree" role="tree" aria-labelledby="tree-title"></div>
+      </aside>
+
+      <section class="viewport-wrap" aria-label="Viewport">
+        <div id="layerbar" class="layerbar" role="toolbar" aria-label="Calques, fond et zoom"></div>
+        <div class="viewport">
+          <canvas id="canvas" tabindex="0" role="application"
+            aria-label="Viewport du sprite. Flèches : déplacer le curseur pixel ou le joint sélectionné. Entrée : appliquer l'outil. Plus et moins : zoom. Point d'interrogation : tous les raccourcis."></canvas>
+          <p id="vp-note" class="vp-note" hidden>Aperçu simplifié (démo) — pas le rendu d'export</p>
+        </div>
+      </section>
+
+      <aside id="right" class="panel panel-right" aria-label="Étape, inspecteur, QA et historique">
+        <div id="stepcard"></div>
+        <section id="inspector" class="section" aria-label="Inspecteur"></section>
+        <section id="qa" class="section" aria-label="Rapport QA"></section>
+        <section id="history" class="section" aria-label="Historique"></section>
+      </aside>
+    </main>
+
+    <footer id="timeline" class="timeline" aria-label="Timeline"></footer>
+
+    <div class="statusbar">
+      <div id="status-hover" class="status-hover"></div>
+      <div id="status-hint" class="status-hint" role="status"></div>
+      <div id="status-right" class="status-right"></div>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
+    <div id="dropveil" class="dropveil" hidden><p>Déposez l'image pour ouvrir ce sprite<br><small>Remplace le projet courant — annulable avec Ctrl+Z</small></p></div>
+  </div>
+
+  <div id="toasts" class="toasts" role="log" aria-live="polite" aria-label="Notifications"></div>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+  <dialog id="help" class="help" aria-labelledby="help-title"></dialog>
+
+  <div id="boot-fail" class="boot-fail" hidden>
+    <h1>animAI ne peut pas démarrer ainsi</h1>
+    <p>L'éditeur utilise des modules JavaScript natifs, que les navigateurs refusent de charger depuis <code>file://</code>.
+      Servez le dossier <code>app/</code> en statique, par exemple :</p>
+    <pre>python -m http.server 8765 --directory app</pre>
+    <p>puis ouvrez <code>http://localhost:8765/</code>.</p>
+  </div>
+  <noscript><p class="boot-fail">animAI a besoin de JavaScript.</p></noscript>
+
+  <script type="module" src="js/main.js"></script>
+  <script>
+    // Si les modules n'ont pas démarré (ouverture en file://, navigateur trop ancien), on le dit clairement.
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        if (!window.__animaiBooted) {
+          document.getElementById('app').hidden = true;
+          document.getElementById('boot-fail').hidden = false;
+        }
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

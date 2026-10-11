@@ -1,0 +1,217 @@
+{
+  "frames": [
+    {
+      "filename": "walk 0",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 1",
+      "frame": {
+        "x": 56,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 2",
+      "frame": {
+        "x": 112,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 3",
+      "frame": {
+        "x": 168,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 4",
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 5",
+      "frame": {
+        "x": 280,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 6",
+      "frame": {
+        "x": 336,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "walk 7",
+      "frame": {
+        "x": 392,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 56,
+        "h": 77
+      },
+      "duration": 100
+    }
+  ],
+  "meta": {
+    "app": "animai",
+    "version": "0.1.0",
+    "image": "walk.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 448,
+      "h": 77
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "walk",
+        "from": 0,
+        "to": 7,
+        "direction": "forward"
+      }
+    ],
+    "animai": {
+      "name": "walk",
+      "loop": true,
+      "fps": 10.0,
+      "duration_ms": 800,
+      "frame_size": {
+        "w": 56,
+        "h": 77
+      },
+      "pivot": {
+        "x": 28,
+        "y": 75
+      },
+      "pivot_normalized": {
+        "x": 0.5,
+        "y": 0.974026
+      }
+    }
+  }
+}

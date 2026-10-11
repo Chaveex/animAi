@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "hurt",
+  "loop": false,
+  "fps": 20,
+  "frames": [
+    {"duration_ms": 50,
+     "bones": {"spine": {"rot": 15}, "head": {"rot": 15}, "arm_r": {"rot": 45}, "arm_l": {"rot": 30}},
+     "z": {"arm_l": 45}},
+    {"duration_ms": 200,
+     "bones": {"spine": {"rot": 15}, "head": {"rot": 30}, "arm_r": {"rot": 60}, "forearm_r": {"rot": 30}, "arm_l": {"rot": 45},
+               "thigh_l": {"rot": -15}, "foot_l": {"rot": 15}, "thigh_r": {"rot": 15}, "foot_r": {"rot": -15}, "hips": {"pos": [0, 1]}},
+     "z": {"arm_l": 45}},
+    {"duration_ms": 100,
+     "bones": {"spine": {"rot": 15}, "head": {"rot": 15}, "arm_r": {"rot": 30}, "arm_l": {"rot": 15},
+               "thigh_l": {"rot": -15}, "foot_l": {"rot": 15}, "thigh_r": {"rot": 15}, "foot_r": {"rot": -15}, "hips": {"pos": [0, 1]}}},
+    {"duration_ms": 50, "bones": {}}
+  ]
+}

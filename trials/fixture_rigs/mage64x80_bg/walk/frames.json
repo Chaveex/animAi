@@ -1,0 +1,1063 @@
+{
+  "version": 1,
+  "name": "walk",
+  "loop": true,
+  "fps": 10.0,
+  "duration_ms": 800,
+  "canvas": [
+    37,
+    61
+  ],
+  "origin": [
+    13,
+    15
+  ],
+  "pivot": [
+    19,
+    59
+  ],
+  "padding": 2,
+  "rotation": "rotsprite",
+  "source": {
+    "sprite_size": [
+      64,
+      80
+    ],
+    "palette": [
+      "#000000",
+      "#222034",
+      "#3f3f74",
+      "#45283c",
+      "#76428a",
+      "#a664be",
+      "#ac3232",
+      "#df7126",
+      "#fbf236",
+      "#ffdbac"
+    ],
+    "orphans": 0,
+    "unassigned": 0,
+    "unassigned_first": null,
+    "multi_assigned": 0
+  },
+  "rest": {
+    "bones": {
+      "hips": {
+        "parent": null,
+        "joint": [
+          31,
+          47
+        ]
+      },
+      "spine": {
+        "parent": "hips",
+        "joint": [
+          31,
+          45
+        ]
+      },
+      "head": {
+        "parent": "spine",
+        "joint": [
+          32,
+          29
+        ]
+      },
+      "arm_r": {
+        "parent": "spine",
+        "joint": [
+          31,
+          32
+        ]
+      },
+      "forearm_r": {
+        "parent": "arm_r",
+        "joint": [
+          31,
+          40
+        ]
+      },
+      "arm_l": {
+        "parent": "spine",
+        "joint": [
+          36,
+          32
+        ]
+      },
+      "forearm_l": {
+        "parent": "arm_l",
+        "joint": [
+          36,
+          40
+        ]
+      },
+      "thigh_r": {
+        "parent": "hips",
+        "joint": [
+          33,
+          49
+        ]
+      },
+      "shin_r": {
+        "parent": "thigh_r",
+        "joint": [
+          33,
+          60
+        ]
+      },
+      "foot_r": {
+        "parent": "shin_r",
+        "joint": [
+          33,
+          71
+        ]
+      },
+      "thigh_l": {
+        "parent": "hips",
+        "joint": [
+          29,
+          49
+        ]
+      },
+      "shin_l": {
+        "parent": "thigh_l",
+        "joint": [
+          29,
+          60
+        ]
+      },
+      "foot_l": {
+        "parent": "shin_l",
+        "joint": [
+          29,
+          71
+        ]
+      }
+    }
+  },
+  "parts": {
+    "arm_l": {
+      "bone": "arm_l",
+      "z": -6,
+      "fill": "own",
+      "hidden_pixels": 13,
+      "missing": []
+    },
+    "forearm_l": {
+      "bone": "forearm_l",
+      "z": -5,
+      "fill": "own",
+      "hidden_pixels": 9,
+      "missing": []
+    },
+    "thigh_l": {
+      "bone": "thigh_l",
+      "z": -3,
+      "fill": "own",
+      "hidden_pixels": 19,
+      "missing": []
+    },
+    "shin_l": {
+      "bone": "shin_l",
+      "z": -2,
+      "fill": "own",
+      "hidden_pixels": 15,
+      "missing": []
+    },
+    "foot_l": {
+      "bone": "foot_l",
+      "z": -1,
+      "fill": "own",
+      "hidden_pixels": 3,
+      "missing": []
+    },
+    "hips": {
+      "bone": "hips",
+      "z": 0,
+      "fill": "own",
+      "hidden_pixels": 40,
+      "missing": []
+    },
+    "torso": {
+      "bone": "spine",
+      "z": 1,
+      "fill": "own",
+      "hidden_pixels": 85,
+      "missing": []
+    },
+    "head": {
+      "bone": "head",
+      "z": 2,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing": []
+    },
+    "thigh_r": {
+      "bone": "thigh_r",
+      "z": 3,
+      "fill": "own",
+      "hidden_pixels": 6,
+      "missing": []
+    },
+    "shin_r": {
+      "bone": "shin_r",
+      "z": 4,
+      "fill": "own",
+      "hidden_pixels": 4,
+      "missing": []
+    },
+    "foot_r": {
+      "bone": "foot_r",
+      "z": 5,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing": []
+    },
+    "arm_r": {
+      "bone": "arm_r",
+      "z": 6,
+      "fill": "own",
+      "hidden_pixels": 4,
+      "missing": []
+    },
+    "forearm_r": {
+      "bone": "forearm_r",
+      "z": 7,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing": []
+    }
+  },
+  "joints": {
+    "spine": 2,
+    "head": 1,
+    "arm_r": 2,
+    "forearm_r": 0,
+    "arm_l": 0,
+    "forearm_l": 0,
+    "thigh_r": 0,
+    "shin_r": 0,
+    "foot_r": 1,
+    "thigh_l": 1,
+    "shin_l": 1,
+    "foot_l": 1
+  },
+  "frames": [
+    {
+      "file": "frame_000.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 0,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            48
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            46
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            30
+          ]
+        },
+        "arm_r": {
+          "angle": -30,
+          "joint": [
+            31,
+            33
+          ]
+        },
+        "forearm_r": {
+          "angle": -30,
+          "joint": [
+            27,
+            40
+          ]
+        },
+        "arm_l": {
+          "angle": 30,
+          "joint": [
+            36,
+            33
+          ]
+        },
+        "forearm_l": {
+          "angle": 60,
+          "joint": [
+            40,
+            40
+          ]
+        },
+        "thigh_r": {
+          "angle": 15,
+          "joint": [
+            33,
+            50
+          ]
+        },
+        "shin_r": {
+          "angle": 15,
+          "joint": [
+            36,
+            61
+          ]
+        },
+        "foot_r": {
+          "angle": 0,
+          "joint": [
+            39,
+            71
+          ]
+        },
+        "thigh_l": {
+          "angle": -15,
+          "joint": [
+            29,
+            50
+          ]
+        },
+        "shin_l": {
+          "angle": -15,
+          "joint": [
+            26,
+            61
+          ]
+        },
+        "foot_l": {
+          "angle": 0,
+          "joint": [
+            23,
+            71
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_001.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 1,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            48
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            46
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            30
+          ]
+        },
+        "arm_r": {
+          "angle": -15,
+          "joint": [
+            31,
+            33
+          ]
+        },
+        "forearm_r": {
+          "angle": -15,
+          "joint": [
+            29,
+            41
+          ]
+        },
+        "arm_l": {
+          "angle": 15,
+          "joint": [
+            36,
+            33
+          ]
+        },
+        "forearm_l": {
+          "angle": 30,
+          "joint": [
+            38,
+            41
+          ]
+        },
+        "thigh_r": {
+          "angle": 15,
+          "joint": [
+            33,
+            50
+          ]
+        },
+        "shin_r": {
+          "angle": 15,
+          "joint": [
+            36,
+            61
+          ]
+        },
+        "foot_r": {
+          "angle": 0,
+          "joint": [
+            39,
+            71
+          ]
+        },
+        "thigh_l": {
+          "angle": -15,
+          "joint": [
+            29,
+            50
+          ]
+        },
+        "shin_l": {
+          "angle": -60,
+          "joint": [
+            26,
+            61
+          ]
+        },
+        "foot_l": {
+          "angle": -30,
+          "joint": [
+            17,
+            66
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_002.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 2,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            47
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            45
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            29
+          ]
+        },
+        "arm_r": {
+          "angle": 0,
+          "joint": [
+            31,
+            32
+          ]
+        },
+        "forearm_r": {
+          "angle": 15,
+          "joint": [
+            31,
+            40
+          ]
+        },
+        "arm_l": {
+          "angle": 0,
+          "joint": [
+            36,
+            32
+          ]
+        },
+        "forearm_l": {
+          "angle": 15,
+          "joint": [
+            36,
+            40
+          ]
+        },
+        "thigh_r": {
+          "angle": 0,
+          "joint": [
+            33,
+            49
+          ]
+        },
+        "shin_r": {
+          "angle": 0,
+          "joint": [
+            33,
+            60
+          ]
+        },
+        "foot_r": {
+          "angle": 0,
+          "joint": [
+            33,
+            71
+          ]
+        },
+        "thigh_l": {
+          "angle": 15,
+          "joint": [
+            29,
+            49
+          ]
+        },
+        "shin_l": {
+          "angle": -30,
+          "joint": [
+            32,
+            60
+          ]
+        },
+        "foot_l": {
+          "angle": 0,
+          "joint": [
+            26,
+            69
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_003.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 3,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            47
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            45
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            29
+          ]
+        },
+        "arm_r": {
+          "angle": 15,
+          "joint": [
+            31,
+            32
+          ]
+        },
+        "forearm_r": {
+          "angle": 30,
+          "joint": [
+            33,
+            40
+          ]
+        },
+        "arm_l": {
+          "angle": -15,
+          "joint": [
+            36,
+            32
+          ]
+        },
+        "forearm_l": {
+          "angle": -15,
+          "joint": [
+            34,
+            40
+          ]
+        },
+        "thigh_r": {
+          "angle": 0,
+          "joint": [
+            33,
+            49
+          ]
+        },
+        "shin_r": {
+          "angle": -15,
+          "joint": [
+            33,
+            60
+          ]
+        },
+        "foot_r": {
+          "angle": 0,
+          "joint": [
+            30,
+            71
+          ]
+        },
+        "thigh_l": {
+          "angle": 30,
+          "joint": [
+            29,
+            49
+          ]
+        },
+        "shin_l": {
+          "angle": 15,
+          "joint": [
+            35,
+            59
+          ]
+        },
+        "foot_l": {
+          "angle": 15,
+          "joint": [
+            37,
+            69
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_004.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 4,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            48
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            46
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            30
+          ]
+        },
+        "arm_r": {
+          "angle": 30,
+          "joint": [
+            31,
+            33
+          ]
+        },
+        "forearm_r": {
+          "angle": 60,
+          "joint": [
+            35,
+            40
+          ]
+        },
+        "arm_l": {
+          "angle": -30,
+          "joint": [
+            36,
+            33
+          ]
+        },
+        "forearm_l": {
+          "angle": -30,
+          "joint": [
+            32,
+            40
+          ]
+        },
+        "thigh_r": {
+          "angle": -15,
+          "joint": [
+            33,
+            50
+          ]
+        },
+        "shin_r": {
+          "angle": -15,
+          "joint": [
+            30,
+            61
+          ]
+        },
+        "foot_r": {
+          "angle": 0,
+          "joint": [
+            27,
+            71
+          ]
+        },
+        "thigh_l": {
+          "angle": 15,
+          "joint": [
+            29,
+            50
+          ]
+        },
+        "shin_l": {
+          "angle": 15,
+          "joint": [
+            32,
+            61
+          ]
+        },
+        "foot_l": {
+          "angle": 0,
+          "joint": [
+            35,
+            71
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_005.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 5,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            48
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            46
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            30
+          ]
+        },
+        "arm_r": {
+          "angle": 15,
+          "joint": [
+            31,
+            33
+          ]
+        },
+        "forearm_r": {
+          "angle": 30,
+          "joint": [
+            33,
+            41
+          ]
+        },
+        "arm_l": {
+          "angle": -15,
+          "joint": [
+            36,
+            33
+          ]
+        },
+        "forearm_l": {
+          "angle": -15,
+          "joint": [
+            34,
+            41
+          ]
+        },
+        "thigh_r": {
+          "angle": -15,
+          "joint": [
+            33,
+            50
+          ]
+        },
+        "shin_r": {
+          "angle": -60,
+          "joint": [
+            30,
+            61
+          ]
+        },
+        "foot_r": {
+          "angle": -30,
+          "joint": [
+            21,
+            66
+          ]
+        },
+        "thigh_l": {
+          "angle": 15,
+          "joint": [
+            29,
+            50
+          ]
+        },
+        "shin_l": {
+          "angle": 15,
+          "joint": [
+            32,
+            61
+          ]
+        },
+        "foot_l": {
+          "angle": 0,
+          "joint": [
+            35,
+            71
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_006.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 6,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            47
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            45
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            29
+          ]
+        },
+        "arm_r": {
+          "angle": 0,
+          "joint": [
+            31,
+            32
+          ]
+        },
+        "forearm_r": {
+          "angle": 15,
+          "joint": [
+            31,
+            40
+          ]
+        },
+        "arm_l": {
+          "angle": 0,
+          "joint": [
+            36,
+            32
+          ]
+        },
+        "forearm_l": {
+          "angle": 15,
+          "joint": [
+            36,
+            40
+          ]
+        },
+        "thigh_r": {
+          "angle": 15,
+          "joint": [
+            33,
+            49
+          ]
+        },
+        "shin_r": {
+          "angle": -30,
+          "joint": [
+            36,
+            60
+          ]
+        },
+        "foot_r": {
+          "angle": 0,
+          "joint": [
+            30,
+            69
+          ]
+        },
+        "thigh_l": {
+          "angle": 0,
+          "joint": [
+            29,
+            49
+          ]
+        },
+        "shin_l": {
+          "angle": 0,
+          "joint": [
+            29,
+            60
+          ]
+        },
+        "foot_l": {
+          "angle": 0,
+          "joint": [
+            29,
+            71
+          ]
+        }
+      }
+    },
+    {
+      "file": "frame_007.png",
+      "duration_ms": 100,
+      "pivot": [
+        19,
+        59
+      ],
+      "source_frame": 7,
+      "bones": {
+        "hips": {
+          "angle": 0,
+          "joint": [
+            31,
+            47
+          ]
+        },
+        "spine": {
+          "angle": 0,
+          "joint": [
+            31,
+            45
+          ]
+        },
+        "head": {
+          "angle": 0,
+          "joint": [
+            32,
+            29
+          ]
+        },
+        "arm_r": {
+          "angle": -15,
+          "joint": [
+            31,
+            32
+          ]
+        },
+        "forearm_r": {
+          "angle": -15,
+          "joint": [
+            29,
+            40
+          ]
+        },
+        "arm_l": {
+          "angle": 15,
+          "joint": [
+            36,
+            32
+          ]
+        },
+        "forearm_l": {
+          "angle": 30,
+          "joint": [
+            38,
+            40
+          ]
+        },
+        "thigh_r": {
+          "angle": 30,
+          "joint": [
+            33,
+            49
+          ]
+        },
+        "shin_r": {
+          "angle": 15,
+          "joint": [
+            39,
+            59
+          ]
+        },
+        "foot_r": {
+          "angle": 15,
+          "joint": [
+            41,
+            69
+          ]
+        },
+        "thigh_l": {
+          "angle": 0,
+          "joint": [
+            29,
+            49
+          ]
+        },
+        "shin_l": {
+          "angle": -15,
+          "joint": [
+            29,
+            60
+          ]
+        },
+        "foot_l": {
+          "angle": 0,
+          "joint": [
+            26,
+            71
+          ]
+        }
+      }
+    }
+  ]
+}

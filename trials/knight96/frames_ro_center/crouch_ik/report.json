@@ -1,0 +1,117 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "id": "palette",
+      "pass": true,
+      "detail": "11 colours used, source palette has 11",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "alpha_binary",
+      "pass": true,
+      "detail": "",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "orphans",
+      "pass": true,
+      "detail": "source sprite has 0 isolated pixels",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "holes",
+      "pass": true,
+      "detail": "14 articulations checked",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "pivot_stable",
+      "pass": true,
+      "detail": "pivot [14, 75]",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "canvas_constant",
+      "pass": true,
+      "detail": "canvas [40, 77]",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "loop_closed",
+      "pass": true,
+      "detail": "not a loop",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "parts_assigned",
+      "pass": true,
+      "detail": "",
+      "frame": null,
+      "pixel": null
+    }
+  ],
+  "metrics": {
+    "unmonitored_joints": [],
+    "outline": null,
+    "frames": [
+      {
+        "border": 190,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      },
+      {
+        "border": 198,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": [
+          [
+            22,
+            34
+          ]
+        ]
+      },
+      {
+        "border": 199,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": [
+          [
+            22,
+            61
+          ]
+        ]
+      },
+      {
+        "border": 198,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": [
+          [
+            22,
+            34
+          ]
+        ]
+      },
+      {
+        "border": 190,
+        "outline_bare": null,
+        "ground_offset": 0,
+        "pinholes": []
+      }
+    ]
+  },
+  "warnings": [
+    "frame 1: pinhole of 1 px at [22, 34] (enclosed negative space, not a hole)",
+    "frame 2: pinhole of 1 px at [22, 61] (enclosed negative space, not a hole)",
+    "frame 3: pinhole of 1 px at [22, 34] (enclosed negative space, not a hole)"
+  ]
+}

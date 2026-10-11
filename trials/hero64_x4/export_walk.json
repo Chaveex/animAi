@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "outputs": {
+    "spritesheet": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\walk\\export\\walk.png",
+    "json": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\walk\\export\\walk.json",
+    "gif": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\walk\\export\\walk.gif",
+    "format": "spritesheet",
+    "frame_count": 8,
+    "frame_size": [
+      34,
+      51
+    ],
+    "sheet_size": [
+      272,
+      51
+    ],
+    "pivot": [
+      18,
+      49
+    ],
+    "duration_ms": 800
+  },
+  "warnings": [],
+  "error": null
+}

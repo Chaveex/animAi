@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "outputs": {
+    "frames_dir": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack",
+    "manifest": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frames.json",
+    "frames": [
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_000.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_001.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_002.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_003.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_004.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_005.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\frame_006.png"
+    ],
+    "contact_sheet": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\contact_sheet.png",
+    "preview": "F:\\Dev\\Tooling\\animAI\\trials\\hero64_x4\\frames\\attack\\preview.gif",
+    "name": "attack",
+    "frame_count": 7,
+    "duration_ms": 700,
+    "durations_ms": [
+      100,
+      150,
+      50,
+      150,
+      100,
+      100,
+      50
+    ],
+    "fps": 20.0,
+    "loop": false,
+    "canvas": [
+      35,
+      51
+    ],
+    "pivot": [
+      19,
+      49
+    ]
+  },
+  "warnings": [],
+  "error": null
+}

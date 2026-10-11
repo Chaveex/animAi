@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "outputs": {
+    "report": "F:\\Dev\\Tooling\\animAI\\trials\\rogue80_outline\\frames\\idle\\report.json",
+    "checks": 8,
+    "failed": []
+  },
+  "warnings": [],
+  "error": null
+}

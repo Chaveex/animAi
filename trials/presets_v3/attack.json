@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "name": "attack",
+  "loop": false,
+  "fps": 20,
+  "frames": [
+    {"duration_ms": 100, "label": "windup",
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 0]},
+       "spine":     {"rot":    0, "pos": [0, 0]},
+       "head":      {"rot":    0, "pos": [0, 0]},
+       "arm_r":     {"rot":  -45, "pos": [0, 0]},
+       "forearm_r": {"rot":    0, "pos": [0, 0]},
+       "arm_l":     {"rot":    0, "pos": [0, 0]},
+       "thigh_r":   {"rot":    0, "pos": [0, 0]},
+       "foot_r":    {"rot":    0, "pos": [0, 0]},
+       "thigh_l":   {"rot":    0, "pos": [0, 0]},
+       "foot_l":    {"rot":    0, "pos": [0, 0]}
+     }},
+    {"duration_ms": 150, "label": "anticipation", "key": 4,
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 0]},
+       "spine":     {"rot":   15, "pos": [0, 0]},
+       "head":      {"rot":  -15, "pos": [0, 0]},
+       "arm_r":     {"rot": -150, "pos": [0, 0]},
+       "forearm_r": {"rot":   30, "pos": [0, 0]},
+       "arm_l":     {"rot":   15, "pos": [0, 0]},
+       "thigh_r":   {"rot":    0, "pos": [0, 0]},
+       "foot_r":    {"rot":    0, "pos": [0, 0]},
+       "thigh_l":   {"rot":    0, "pos": [0, 0]},
+       "foot_l":    {"rot":    0, "pos": [0, 0]}
+     }},
+    {"duration_ms": 50, "label": "strike", "key": 3,
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 1]},
+       "spine":     {"rot":  -15, "pos": [0, 0]},
+       "head":      {"rot":   15, "pos": [0, 0]},
+       "arm_r":     {"rot":  105, "pos": [0, 0]},
+       "forearm_r": {"rot":    0, "pos": [0, 0]},
+       "arm_l":     {"rot":   15, "pos": [0, 0]},
+       "thigh_r":   {"rot":   15, "pos": [0, 0]},
+       "foot_r":    {"rot":  -15, "pos": [0, 0]},
+       "thigh_l":   {"rot":  -15, "pos": [0, 0]},
+       "foot_l":    {"rot":   15, "pos": [0, 0]}
+     }},
+    {"duration_ms": 150, "label": "impact", "key": 2,
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 1]},
+       "spine":     {"rot":  -15, "pos": [0, 0]},
+       "head":      {"rot":   15, "pos": [0, 0]},
+       "arm_r":     {"rot":   60, "pos": [0, 0]},
+       "forearm_r": {"rot":    0, "pos": [0, 0]},
+       "arm_l":     {"rot":   15, "pos": [0, 0]},
+       "thigh_r":   {"rot":   15, "pos": [0, 0]},
+       "foot_r":    {"rot":  -15, "pos": [0, 0]},
+       "thigh_l":   {"rot":  -15, "pos": [0, 0]},
+       "foot_l":    {"rot":   15, "pos": [0, 0]}
+     }},
+    {"duration_ms": 100, "label": "rebound",
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 1]},
+       "spine":     {"rot":  -15, "pos": [0, 0]},
+       "head":      {"rot":   15, "pos": [0, 0]},
+       "arm_r":     {"rot":   75, "pos": [0, 0]},
+       "forearm_r": {"rot":   15, "pos": [0, 0]},
+       "arm_l":     {"rot":   15, "pos": [0, 0]},
+       "thigh_r":   {"rot":   15, "pos": [0, 0]},
+       "foot_r":    {"rot":  -15, "pos": [0, 0]},
+       "thigh_l":   {"rot":  -15, "pos": [0, 0]},
+       "foot_l":    {"rot":   15, "pos": [0, 0]}
+     }},
+    {"duration_ms": 100, "label": "recover",
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 0]},
+       "spine":     {"rot":    0, "pos": [0, 0]},
+       "head":      {"rot":    0, "pos": [0, 0]},
+       "arm_r":     {"rot":   30, "pos": [0, 0]},
+       "forearm_r": {"rot":   15, "pos": [0, 0]},
+       "arm_l":     {"rot":    0, "pos": [0, 0]},
+       "thigh_r":   {"rot":    0, "pos": [0, 0]},
+       "foot_r":    {"rot":    0, "pos": [0, 0]},
+       "thigh_l":   {"rot":    0, "pos": [0, 0]},
+       "foot_l":    {"rot":    0, "pos": [0, 0]}
+     }},
+    {"duration_ms": 50, "label": "rest", "key": 1,
+     "bones": {
+       "hips":      {"rot":    0, "pos": [0, 0]},
+       "spine":     {"rot":    0, "pos": [0, 0]},
+       "head":      {"rot":    0, "pos": [0, 0]},
+       "arm_r":     {"rot":    0, "pos": [0, 0]},
+       "forearm_r": {"rot":    0, "pos": [0, 0]},
+       "arm_l":     {"rot":    0, "pos": [0, 0]},
+       "thigh_r":   {"rot":    0, "pos": [0, 0]},
+       "foot_r":    {"rot":    0, "pos": [0, 0]},
+       "thigh_l":   {"rot":    0, "pos": [0, 0]},
+       "foot_l":    {"rot":    0, "pos": [0, 0]}
+     }}
+  ]
+}

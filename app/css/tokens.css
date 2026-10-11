@@ -1,0 +1,81 @@
+/* animAI — design tokens (source unique). Voir docs/ux-spec.md § 9.
+   Gris strictement neutres (R = G = B) : l'UI ne doit pas teinter la perception
+   des couleurs du sprite. Une seule couleur d'accent, réservée au focus et à la sélection. */
+
+:root {
+  /* Espacements (base 4 px) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+
+  /* Tailles */
+  --ctl-h: 28px;          /* hauteur des contrôles = cible de clic minimale */
+  --topbar-h: 40px;
+  --statusbar-h: 24px;
+  --rail-w: 40px;
+  --left-w: 240px;
+  --right-w: 300px;
+  --radius: 4px;
+
+  /* Typographie */
+  --font-ui: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 16px;
+  --lh: 1.4;
+
+  /* Viewport : indépendant du thème, pour que le sprite soit jugé sur le même fond */
+  --vp-checker-a: #7f7f7f;
+  --vp-checker-b: #8f8f8f;
+
+  /* Mouvement */
+  --t-fast: 80ms;
+}
+
+/* Thème sombre (défaut) */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-app: #1c1c1c;
+  --bg-panel: #252525;
+  --bg-raised: #2f2f2f;
+  --bg-input: #181818;
+  --bg-hover: #383838;
+  --bg-selected: #1f3a66;
+  --border: #3d3d3d;
+  --border-strong: #757575;
+  --text: #e8e8e8;
+  --text-muted: #a8a8a8;
+  --accent: #78aaff;
+  --on-accent: #0a0a0a;
+  --danger: #ff8a80;
+  --warn: #e6b84d;
+  --ok: #6fd08c;
+  --vp-surround: #2b2b2b;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-app: #ececec;
+  --bg-panel: #f7f7f7;
+  --bg-raised: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #e2e2e2;
+  --bg-selected: #d3e2fb;
+  --border: #cfcfcf;
+  --border-strong: #858585;
+  --text: #1a1a1a;
+  --text-muted: #595959;
+  --accent: #1a56c4;
+  --on-accent: #ffffff;
+  --danger: #b3261e;
+  --warn: #7a5200;
+  --ok: #17692f;
+  --vp-surround: #c4c4c4;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}

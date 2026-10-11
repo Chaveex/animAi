@@ -1,0 +1,195 @@
+{
+  "frames": [
+    {
+      "filename": "attack 0",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 100
+    },
+    {
+      "filename": "attack 1",
+      "frame": {
+        "x": 34,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 150
+    },
+    {
+      "filename": "attack 2",
+      "frame": {
+        "x": 68,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 50
+    },
+    {
+      "filename": "attack 3",
+      "frame": {
+        "x": 102,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 150
+    },
+    {
+      "filename": "attack 4",
+      "frame": {
+        "x": 136,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 100
+    },
+    {
+      "filename": "attack 5",
+      "frame": {
+        "x": 170,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 100
+    },
+    {
+      "filename": "attack 6",
+      "frame": {
+        "x": 204,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 34,
+        "h": 52
+      },
+      "sourceSize": {
+        "w": 34,
+        "h": 52
+      },
+      "duration": 50
+    }
+  ],
+  "meta": {
+    "app": "animai",
+    "version": "0.1.0",
+    "image": "attack.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 238,
+      "h": 52
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "attack",
+        "from": 0,
+        "to": 6,
+        "direction": "forward"
+      }
+    ],
+    "animai": {
+      "name": "attack",
+      "loop": false,
+      "fps": 20.0,
+      "duration_ms": 700,
+      "frame_size": {
+        "w": 34,
+        "h": 52
+      },
+      "pivot": {
+        "x": 18,
+        "y": 49
+      },
+      "pivot_normalized": {
+        "x": 0.529412,
+        "y": 0.942308
+      }
+    }
+  }
+}

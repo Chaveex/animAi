@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "outputs": {
+    "spritesheet": "F:\\Dev\\Tooling\\animAI\\trials\\hero_min\\frames\\attack\\export\\attack.png",
+    "json": "F:\\Dev\\Tooling\\animAI\\trials\\hero_min\\frames\\attack\\export\\attack.json",
+    "gif": "F:\\Dev\\Tooling\\animAI\\trials\\hero_min\\frames\\attack\\export\\attack.gif",
+    "format": "spritesheet",
+    "frame_count": 7,
+    "frame_size": [
+      34,
+      52
+    ],
+    "sheet_size": [
+      238,
+      52
+    ],
+    "pivot": [
+      18,
+      49
+    ],
+    "duration_ms": 700
+  },
+  "warnings": [],
+  "error": null
+}

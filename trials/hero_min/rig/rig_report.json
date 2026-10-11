@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "sprite_size": [
+    64,
+    64
+  ],
+  "pivot": [
+    33,
+    60
+  ],
+  "unassigned_count": 0,
+  "unassigned": [],
+  "multi_assigned_count": 0,
+  "rest_pose_exact": true,
+  "joints": {
+    "spine": 1,
+    "head": 3,
+    "arm_r": 3,
+    "arm_l": 0,
+    "thigh_r": 1,
+    "thigh_l": 1
+  },
+  "bones": {
+    "hips": {
+      "parent": null,
+      "joint": [
+        30,
+        39
+      ]
+    },
+    "spine": {
+      "parent": "hips",
+      "joint": [
+        30,
+        38
+      ]
+    },
+    "head": {
+      "parent": "spine",
+      "joint": [
+        31,
+        24
+      ]
+    },
+    "arm_r": {
+      "parent": "spine",
+      "joint": [
+        30,
+        27
+      ]
+    },
+    "arm_l": {
+      "parent": "spine",
+      "joint": [
+        37,
+        27
+      ]
+    },
+    "thigh_r": {
+      "parent": "hips",
+      "joint": [
+        33,
+        40
+      ]
+    },
+    "thigh_l": {
+      "parent": "hips",
+      "joint": [
+        28,
+        40
+      ]
+    }
+  },
+  "parts": {
+    "arm_l": {
+      "bone": "arm_l",
+      "z": -20,
+      "pixels": 21,
+      "fill": "own",
+      "hidden_pixels": 22,
+      "missing_pixels": 0,
+      "bbox": [
+        34,
+        25,
+        5,
+        10
+      ]
+    },
+    "forearm_l": {
+      "bone": "arm_l",
+      "z": -19,
+      "pixels": 24,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing_pixels": 0,
+      "bbox": [
+        36,
+        33,
+        3,
+        8
+      ]
+    },
+    "thigh_l": {
+      "bone": "thigh_l",
+      "z": -10,
+      "pixels": 40,
+      "fill": "own",
+      "hidden_pixels": 38,
+      "missing_pixels": 0,
+      "bbox": [
+        26,
+        39,
+        7,
+        12
+      ]
+    },
+    "shin_l": {
+      "bone": "thigh_l",
+      "z": -9,
+      "pixels": 40,
+      "fill": "own",
+      "hidden_pixels": 28,
+      "missing_pixels": 0,
+      "bbox": [
+        26,
+        48,
+        7,
+        11
+      ]
+    },
+    "foot_l": {
+      "bone": "thigh_l",
+      "z": -8,
+      "pixels": 15,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing_pixels": 0,
+      "bbox": [
+        26,
+        57,
+        5,
+        3
+      ]
+    },
+    "torso": {
+      "bone": "spine",
+      "z": -5,
+      "pixels": 76,
+      "fill": "own",
+      "hidden_pixels": 104,
+      "missing_pixels": 0,
+      "bbox": [
+        26,
+        22,
+        11,
+        18
+      ]
+    },
+    "thigh_r": {
+      "bone": "thigh_r",
+      "z": -4,
+      "pixels": 40,
+      "fill": "own",
+      "hidden_pixels": 21,
+      "missing_pixels": 0,
+      "bbox": [
+        30,
+        39,
+        6,
+        12
+      ]
+    },
+    "shin_r": {
+      "bone": "thigh_r",
+      "z": -3,
+      "pixels": 40,
+      "fill": "own",
+      "hidden_pixels": 11,
+      "missing_pixels": 0,
+      "bbox": [
+        31,
+        49,
+        6,
+        10
+      ]
+    },
+    "foot_r": {
+      "bone": "thigh_r",
+      "z": -2,
+      "pixels": 24,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing_pixels": 0,
+      "bbox": [
+        31,
+        57,
+        8,
+        3
+      ]
+    },
+    "hips": {
+      "bone": "hips",
+      "z": 0,
+      "pixels": 24,
+      "fill": "own",
+      "hidden_pixels": 28,
+      "missing_pixels": 0,
+      "bbox": [
+        26,
+        34,
+        10,
+        7
+      ]
+    },
+    "head": {
+      "bone": "head",
+      "z": 30,
+      "pixels": 140,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing_pixels": 0,
+      "bbox": [
+        26,
+        13,
+        12,
+        12
+      ]
+    },
+    "arm_r": {
+      "bone": "arm_r",
+      "z": 40,
+      "pixels": 28,
+      "fill": "own",
+      "hidden_pixels": 8,
+      "missing_pixels": 0,
+      "bbox": [
+        29,
+        26,
+        4,
+        9
+      ]
+    },
+    "forearm_r": {
+      "bone": "arm_r",
+      "z": 41,
+      "pixels": 32,
+      "fill": "own",
+      "hidden_pixels": 0,
+      "missing_pixels": 0,
+      "bbox": [
+        29,
+        33,
+        4,
+        8
+      ]
+    }
+  }
+}

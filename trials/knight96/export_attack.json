@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "outputs": {
+    "spritesheet": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\attack\\export\\attack.png",
+    "json": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\attack\\export\\attack.json",
+    "gif": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\attack\\export\\attack.gif",
+    "format": "spritesheet",
+    "frame_count": 7,
+    "frame_size": [
+      59,
+      77
+    ],
+    "sheet_size": [
+      413,
+      77
+    ],
+    "pivot": [
+      30,
+      75
+    ],
+    "duration_ms": 700
+  },
+  "warnings": [],
+  "error": null
+}

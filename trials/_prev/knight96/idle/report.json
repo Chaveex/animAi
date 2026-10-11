@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "id": "palette",
+      "pass": true,
+      "detail": "11 colours used, source palette has 11",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "alpha_binary",
+      "pass": true,
+      "detail": "",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "orphans",
+      "pass": true,
+      "detail": "source sprite has 0 isolated pixels",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "holes",
+      "pass": true,
+      "detail": "14 articulations checked",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "pivot_stable",
+      "pass": true,
+      "detail": "pivot [13, 75]",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "canvas_constant",
+      "pass": true,
+      "detail": "canvas [25, 77]",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "loop_closed",
+      "pass": true,
+      "detail": "last -> first changes 44 pixels, largest step 58",
+      "frame": null,
+      "pixel": null
+    },
+    {
+      "id": "parts_assigned",
+      "pass": true,
+      "detail": "",
+      "frame": null,
+      "pixel": null
+    }
+  ]
+}

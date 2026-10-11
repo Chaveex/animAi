@@ -1,0 +1,130 @@
+{
+  "frames": [
+    {
+      "filename": "idle 0",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 25,
+        "h": 77
+      },
+      "duration": 600
+    },
+    {
+      "filename": "idle 1",
+      "frame": {
+        "x": 25,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 25,
+        "h": 77
+      },
+      "duration": 100
+    },
+    {
+      "filename": "idle 2",
+      "frame": {
+        "x": 50,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 25,
+        "h": 77
+      },
+      "duration": 600
+    },
+    {
+      "filename": "idle 3",
+      "frame": {
+        "x": 75,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 25,
+        "h": 77
+      },
+      "duration": 100
+    }
+  ],
+  "meta": {
+    "app": "animai",
+    "version": "0.1.0",
+    "image": "idle.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 100,
+      "h": 77
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "idle",
+        "from": 0,
+        "to": 3,
+        "direction": "forward"
+      }
+    ],
+    "animai": {
+      "name": "idle",
+      "loop": true,
+      "fps": 10.0,
+      "duration_ms": 1400,
+      "frame_size": {
+        "w": 25,
+        "h": 77
+      },
+      "pivot": {
+        "x": 13,
+        "y": 75
+      },
+      "pivot_normalized": {
+        "x": 0.52,
+        "y": 0.974026
+      },
+      "mirror": false
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "fixtures": [
+    {
+      "name": "hero64",
+      "description": "64x64, flat colours, no outline, transparent background",
+      "source_size": [64, 64],
+      "native_size": [64, 64],
+      "colors": 10
+    },
+    {
+      "name": "knight96",
+      "description": "96x96, bulky proportions, separate hand parts, transparent background",
+      "source_size": [96, 96],
+      "native_size": [96, 96],
+      "colors": 11
+    },
+    {
+      "name": "rogue80_outline",
+      "description": "80x80, 1 px dark outline around the silhouette, uses region.pixels",
+      "source_size": [80, 80],
+      "native_size": [80, 80],
+      "colors": 12
+    },
+    {
+      "name": "mage64x80_bg",
+      "description": "64x80 (non square), slim, flat opaque magenta background to key out",
+      "source_size": [64, 80],
+      "native_size": [64, 80],
+      "colors": 10
+    },
+    {
+      "name": "hero64_x4",
+      "description": "hero64 upscaled x4 nearest-neighbour (256x256 file, real grid 64x64)",
+      "source_size": [256, 256],
+      "native_size": [64, 64],
+      "colors": 10
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "outputs": {
+    "spritesheet": "F:\\Dev\\Tooling\\animAI\\trials\\rogue80_outline\\frames\\attack\\export\\attack.png",
+    "json": "F:\\Dev\\Tooling\\animAI\\trials\\rogue80_outline\\frames\\attack\\export\\attack.json",
+    "gif": "F:\\Dev\\Tooling\\animAI\\trials\\rogue80_outline\\frames\\attack\\export\\attack.gif",
+    "format": "spritesheet",
+    "frame_count": 7,
+    "frame_size": [
+      47,
+      61
+    ],
+    "sheet_size": [
+      329,
+      61
+    ],
+    "pivot": [
+      25,
+      59
+    ],
+    "duration_ms": 700
+  },
+  "warnings": [],
+  "error": null
+}

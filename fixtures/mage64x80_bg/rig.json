@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "sprite": "sprite.png",
+  "view": "side",
+  "template": "humanoid",
+  "pivot": [0.5, 1.0],
+  "bones": {
+    "hips": {
+      "parent": null,
+      "joint": [31, 47]
+    },
+    "spine": {
+      "parent": "hips",
+      "joint": [31, 45]
+    },
+    "head": {
+      "parent": "spine",
+      "joint": [32, 29]
+    },
+    "arm_r": {
+      "parent": "spine",
+      "joint": [31, 32]
+    },
+    "forearm_r": {
+      "parent": "arm_r",
+      "joint": [31, 40]
+    },
+    "arm_l": {
+      "parent": "spine",
+      "joint": [36, 32]
+    },
+    "forearm_l": {
+      "parent": "arm_l",
+      "joint": [36, 40]
+    },
+    "thigh_r": {
+      "parent": "hips",
+      "joint": [33, 49]
+    },
+    "shin_r": {
+      "parent": "thigh_r",
+      "joint": [33, 60]
+    },
+    "foot_r": {
+      "parent": "shin_r",
+      "joint": [33, 71]
+    },
+    "thigh_l": {
+      "parent": "hips",
+      "joint": [29, 49]
+    },
+    "shin_l": {
+      "parent": "thigh_l",
+      "joint": [29, 60]
+    },
+    "foot_l": {
+      "parent": "shin_l",
+      "joint": [29, 71]
+    }
+  },
+  "parts": {
+    "arm_l": {
+      "bone": "arm_l",
+      "z": -6,
+      "region": {
+        "rects": [[35, 30, 3, 10]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "forearm_l": {
+      "bone": "forearm_l",
+      "z": -5,
+      "region": {
+        "rects": [[35, 40, 3, 9]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "thigh_l": {
+      "bone": "thigh_l",
+      "z": -3,
+      "region": {
+        "rects": [[27, 49, 4, 11]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "shin_l": {
+      "bone": "shin_l",
+      "z": -2,
+      "region": {
+        "rects": [[27, 60, 4, 11]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "foot_l": {
+      "bone": "foot_l",
+      "z": -1,
+      "region": {
+        "rects": [[27, 71, 4, 3]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "hips": {
+      "bone": "hips",
+      "z": 0,
+      "region": {
+        "rects": [[27, 45, 2, 4], [33, 45, 2, 4]],
+        "pixels": []
+      },
+      "overlap": 2
+    },
+    "torso": {
+      "bone": "spine",
+      "z": 1,
+      "region": {
+        "rects": [[27, 29, 8, 1], [27, 30, 2, 15], [33, 30, 2, 15]],
+        "pixels": []
+      },
+      "overlap": 2
+    },
+    "head": {
+      "bone": "head",
+      "z": 2,
+      "region": {
+        "rects": [[27, 17, 10, 1], [26, 18, 12, 10], [27, 28, 10, 1]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "thigh_r": {
+      "bone": "thigh_r",
+      "z": 3,
+      "region": {
+        "rects": [[31, 49, 4, 11]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "shin_r": {
+      "bone": "shin_r",
+      "z": 4,
+      "region": {
+        "rects": [[31, 60, 4, 11]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "foot_r": {
+      "bone": "foot_r",
+      "z": 5,
+      "region": {
+        "rects": [[31, 71, 7, 3]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "arm_r": {
+      "bone": "arm_r",
+      "z": 6,
+      "region": {
+        "rects": [[29, 30, 4, 10]],
+        "pixels": []
+      },
+      "overlap": 1
+    },
+    "forearm_r": {
+      "bone": "forearm_r",
+      "z": 7,
+      "region": {
+        "rects": [[29, 40, 4, 9]],
+        "pixels": []
+      },
+      "overlap": 1
+    }
+  },
+  "ik": {
+    "foot_r": {
+      "chain": [
+        "thigh_r",
+        "shin_r"
+      ],
+      "target_bone": "foot_r"
+    },
+    "foot_l": {
+      "chain": [
+        "thigh_l",
+        "shin_l"
+      ],
+      "target_bone": "foot_l"
+    }
+  }
+}

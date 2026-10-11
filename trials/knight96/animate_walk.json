@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "outputs": {
+    "frames_dir": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk",
+    "manifest": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frames.json",
+    "frames": [
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_000.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_001.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_002.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_003.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_004.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_005.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_006.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\frame_007.png"
+    ],
+    "contact_sheet": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\contact_sheet.png",
+    "preview": "F:\\Dev\\Tooling\\animAI\\trials\\knight96\\frames\\walk\\preview.gif",
+    "name": "walk",
+    "frame_count": 8,
+    "duration_ms": 800,
+    "durations_ms": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "fps": 10.0,
+    "loop": true,
+    "canvas": [
+      56,
+      77
+    ],
+    "pivot": [
+      28,
+      75
+    ]
+  },
+  "warnings": [],
+  "error": null
+}
