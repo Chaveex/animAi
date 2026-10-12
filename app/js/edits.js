@@ -169,6 +169,7 @@ const NAME_RE = /^[A-Za-z][A-Za-z0-9_-]*$/;
 /** Message d'erreur si `name` ne peut pas nommer un nouvel élément parmi `taken`, sinon null. */
 export function nameError(name, taken) {
   if (!name) return 'Le nom ne peut pas être vide.';
+  if (name.length > 48) return 'Nom trop long : 48 caractères au plus.';
   if (!NAME_RE.test(name)) return 'Nom invalide : une lettre, puis lettres, chiffres, « _ » ou « - » (pas d\'espace ni d\'accent).';
   if (taken.includes(name)) return `« ${name} » existe déjà.`;
   return null;

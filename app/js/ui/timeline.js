@@ -54,6 +54,15 @@ const hasKey = (f, bone) => !!(f.bones && f.bones[bone]);
 const retouches = (f) => (f.paint ? f.paint.length : 0);
 const swapOn = (name) => ((state.anim.frames[state.frame] || {}).swap || []).includes(name);
 
+/** Supprime la frame ; si le bouton se désactive (une seule frame restante), le focus passe à la frame courante. */
+function removeFrame() {
+  deleteFrame();
+  const btn = $('[data-fid="tl-delete"]');
+  if (btn && !btn.disabled) return;
+  const cell = $(`#tl-strip [data-frame="${state.frame}"]`);
+  if (cell) cell.focus();
+}
+
 function num(fid, label, value, { min, max, unit, title, onchange }) {
   const input = h('input', {
     type: 'number', class: 'num', id: 't-' + fid, 'data-fid': 't-' + fid, min, max, step: 1, value: String(value), title,
@@ -96,14 +105,14 @@ function render() {
       onchange: (v) => exec(setCmd('anim', ['frames', state.frame, 'duration_ms'], v, `Durée de la frame ${state.frame + 1}`)),
     }),
     h('button', { class: 'btn', 'data-fid': 'tl-capture', title: 'Capturer la pose (K) : garde cette frame et ouvre, juste après, une copie à modifier', onclick: captureFrame }, '+ Capturer la pose'),
-    h('button', { class: 'btn', 'data-fid': 'tl-delete', disabled: n < 2, title: 'Supprimer la frame courante (annulable)', onclick: deleteFrame }, 'Supprimer la frame'),
+    h('button', { class: 'btn', 'data-fid': 'tl-delete', disabled: n < 2, title: 'Supprimer la frame courante (annulable)', onclick: removeFrame }, 'Supprimer la frame'),
     // pièces de remplacement (rig.json « swaps ») : une image dessinée à la place de pièces, pour cette frame
-    Object.keys(state.rig.swaps || {}).length > 0 && h('span', { class: 'bar-field', role: 'group', 'aria-label': 'Pièces de remplacement de la frame' }, 'Remplacement',
+    Object.keys(state.rig.swaps || {}).length > 0 && h('span', { class: 'bar-field tl-swaps', role: 'group', 'aria-label': 'Pièces de remplacement de la frame' }, 'Remplacement',
       Object.keys(state.rig.swaps).map((name) => h('button', {
         class: 'chip', 'data-fid': 'swap:' + name, 'data-swap': name, 'aria-pressed': String(swapOn(name)),
-        title: `Dans cette frame, dessiner l'image « ${state.rig.swaps[name].image} » à la place des pièces qu'elle remplace`,
+        title: `${name} : dans cette frame, dessiner l'image « ${state.rig.swaps[name].image} » à la place des pièces qu'elle remplace`,
         onclick: () => toggleSwap(name),
-      }, name))),
+      }, h('span', { class: 'chip-text' }, name)))),
     h('span', { class: 'spacer' }),
     h('span', { class: 'tl-render', id: 'tl-render', role: 'status' }),
     num('frames', 'Frames', n, { min: 1, max: 64, title: '4 à 8 recommandé en pixel art. Garde la durée totale ; les frames deviennent de même durée.', onchange: (v) => retime({ frames: v }) }),

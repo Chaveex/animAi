@@ -209,6 +209,8 @@ Une pose que la rotation ne sait pas faire (bras qui se tend, main qui s'ouvre) 
 - Un remplacement remplace toujours au moins une pièce : décocher la dernière est refusé avec un message.
 - **« Changer l'image… »** n'écrase rien : `Ctrl+Z` revient à l'ancienne image. **« Supprimer »** retire le remplacement du rig et de toutes les frames (annulable). Dans les deux cas l'image qui n'est plus utilisée quitte le dossier `swaps/` du projet ; le serveur la garde dans `.animai/trash/` et la remet en place à l'annulation.
 - Renommer ou supprimer un pivot met à jour l'os des remplacements qu'il porte.
+- **Noms** (pivots et remplacements) : 48 caractères au plus. Dans la timeline, une pastille de remplacement est tronquée à 160 px (nom complet en infobulle) et le groupe passe à la ligne : la barre ne dépasse jamais la fenêtre.
+- **Focus clavier** : l'image d'ancre montre son anneau de focus sur son cadre. Après une action qui fait disparaître l'élément actif, le focus va à un élément stable : `Entrée` dans un champ Nom y reste ; « Supprimer » un remplacement passe à la carte voisine (à défaut « + Image… ») ; `Suppr` sur un pivot passe à son parent ; ajouter une image passe à l'image d'ancre ; choisir une couleur ou `Échap` dans un nuancier revient au bouton qui l'a ouvert ; supprimer l'avant-dernière frame passe à la frame restante.
 
 **Utiliser.** La barre de la timeline montre un groupe « Remplacement » : une pastille par image. Elle active ou retire le remplacement **dans la frame courante** (`frames[i].swap`), en un pas d'annulation ; la pastille « Dans la frame N » de la section fait la même chose. L'image suit son os : on la place et on la tourne avec l'outil Déplacer.
 
@@ -398,6 +400,18 @@ Source unique : `app/js/shortcuts.js` alimente à la fois le gestionnaire clavie
 `Espace` : un appui bref lance ou arrête la lecture ; maintenu avec un glisser, il déplace la vue sans toucher à la lecture. Sur un bouton qui a le focus, `Espace` et `Entrée` activent ce bouton, comme partout.
 
 Réservés pour les outils à venir : `F` remplissage, `Q` lasso, `Ctrl+K` palette de commandes.
+
+### Infobulles
+
+Une seule bulle pour toute l'app (`js/tooltips.js`), à la place des infobulles natives du navigateur.
+
+- **Contenu** : ce que fait le contrôle, et la **touche du raccourci** qui fait la même chose, dans une pastille clavier. La touche vient de la table unique des raccourcis (`tip` dans `js/shortcuts.js`) : ajouter un raccourci et son `tip` suffit, le contrôle n'a rien à répéter.
+- **Souris** : après 0,45 s de survol ; tout de suite quand une bulle est déjà affichée (on balaie une barre d'outils sans attendre).
+- **Clavier** : tout de suite quand un bouton, une pastille, une ligne de la hiérarchie ou un en-tête dépliable reçoit le focus au clavier. Pas sur un champ de saisie (la bulle gênerait la frappe ; le survol reste).
+- Elle se ferme au clic, à la frappe, au défilement, à `Échap`, et quand le contrôle disparaît. Elle ne prend jamais le focus et ne se clique pas.
+- Placée sous le contrôle, au-dessus s'il n'y a pas la place, à droite pour le rail d'outils ; toujours dans la fenêtre.
+- Les contrôles gardent leur texte pour les lecteurs d'écran (`aria-label` ou `aria-description`).
+- Restent en infobulle native : les contrôles désactivés et les deux canvas.
 
 ## 10. Design tokens
 
@@ -622,6 +636,7 @@ puis ouvrir `http://localhost:8765/` (état vide) ou `http://localhost:8765/?dem
 | `js/viewport.js` | Canvas : rendu net, zoom, pan, calques, outils |
 | `js/preview.js` | Cache des frames demandées à la couche de données |
 | `js/shortcuts.js` | Table unique des raccourcis |
+| `js/tooltips.js` | Infobulles : action + touche du raccourci, au survol et au focus clavier |
 | `js/label-palette.js` | Couleurs, motifs, numéros de la label map |
 | `js/ui/*.js` | Barre du haut, hiérarchie, inspecteur, remplacements, QA, historique, timeline |
 | **`js/data/api.js`** | **Couche d'accès aux données, point d'entrée unique.** Choisit le backend. |

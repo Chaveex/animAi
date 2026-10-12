@@ -12,6 +12,7 @@ import { initSwaps } from './ui/swaps.js';
 import { initQa, clearQaFocus } from './ui/qa.js';
 import { initTimeline, togglePlay, stepFrame, gotoFrame } from './ui/timeline.js';
 import './preview.js';
+import { initTooltips } from './tooltips.js';
 
 const selectedBone = () => (state.selection && state.selection.kind === 'bone' ? state.selection.id : null);
 
@@ -149,6 +150,7 @@ function boot() {
   initQa();
   initTimeline();
   viewport.initViewport($('#canvas'));
+  initTooltips();
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', () => {

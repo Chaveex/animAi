@@ -130,7 +130,7 @@ function stepCard() {
         h('span', { class: 'field-input' }, h('input', {
           type: 'text', class: 'txt', id: 'f-anim-name', 'data-fid': 'anim-name', value: state.anim.name || '', spellcheck: 'false', autocomplete: 'off',
           title: 'Nom de l\'animation (écrit dans anim.json et dans l\'export)',
-          onkeydown: (e) => e.key === 'Enter' && e.target.blur(), onchange: (e) => renameAnim(e.target.value),
+          onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); renameAnim(e.target.value); } }, onchange: (e) => renameAnim(e.target.value),
         }))),
       h('div', { class: 'field' }, h('label', { for: 'f-preset' }, 'Preset'),
         h('span', { class: 'field-input' }, select,
@@ -193,14 +193,16 @@ function boneInspector(bone) {
   const nameInput = h('input', {
     type: 'text', class: 'txt', id: 'f-bone-name', 'data-fid': 'bone-name', value: bone, spellcheck: 'false', autocomplete: 'off',
     title: 'Renommer ce pivot (F2). Entrée pour valider.',
-    onkeydown: (e) => e.key === 'Enter' && nameInput.blur(),
-    onchange: () => {
-      const err = renameBone(bone, nameInput.value);
-      if (!err) return;
-      hint(err);
-      nameInput.value = bone;
-    },
+    // Entrée valide sans quitter le champ : le panneau est reconstruit, le focus y revient
+    onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); commitName(); } },
+    onchange: () => commitName(),
   });
+  const commitName = () => {
+    const err = renameBone(bone, nameInput.value);
+    if (!err) return;
+    hint(err);
+    nameInput.value = bone;
+  };
   const below = boneSubtree(bone);
   const root = !b.parent || !state.rig.bones[b.parent];
   const out = [
@@ -221,7 +223,7 @@ function boneInspector(bone) {
         : 'aucune (rattachez une pièce : champ « Os » de la pièce, ou « + Pièce »)')),
     !root && h('button', {
       class: 'btn', 'data-fid': 'bone-delete', title: 'Ses pièces et ses enfants passent à son parent (Suppr dans la hiérarchie). Annulable.',
-      onclick: () => { const err = deleteBone(bone); if (err) hint(err); },
+      onclick: () => { const err = deleteBone(bone); if (err) hint(err); else if (document.activeElement === document.body && $('#f-bone-name')) $('#f-bone-name').focus(); },
     }, 'Supprimer ce pivot'),
   ];
   if (isAnimStep() && frameCount()) {

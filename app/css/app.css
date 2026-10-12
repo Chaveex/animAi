@@ -177,6 +177,16 @@ input[type="range"] { width: 72px; accent-color: var(--accent); }
 .field-value { overflow-wrap: anywhere; }
 label.scrub { cursor: ew-resize; user-select: none; touch-action: none; }
 
+/* --- Infobulles ------------------------------------------------------------------ */
+.tip {
+  position: fixed; z-index: 60; left: 0; top: 0; max-width: 300px; pointer-events: none;
+  display: flex; align-items: baseline; gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--bg-raised); color: var(--text); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow);
+  font-size: var(--fs-sm); line-height: 1.35;
+}
+.tip kbd { flex: none; }
+
 /* --- Pièces de remplacement ---------------------------------------------------- */
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin: var(--sp-3) var(--sp-3) 0; }
 .section > .note { margin: var(--sp-2) var(--sp-3) 0; }
@@ -187,6 +197,16 @@ label.scrub { cursor: ew-resize; user-select: none; touch-action: none; }
 .swap-body { display: grid; gap: var(--sp-2); padding: var(--sp-2); }
 .swap-view { max-height: 240px; overflow: auto; justify-self: start; max-width: 100%; border: 1px solid var(--border-strong); background: repeating-conic-gradient(var(--vp-checker-a) 0% 25%, var(--vp-checker-b) 0% 50%) 0 0 / 16px 16px; }
 .swap-canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+/* l'anneau de focus est porté par le cadre : celui du canvas serait rogné par le défilement */
+.swap-canvas:focus-visible { outline: none; }
+.swap-view:has(.swap-canvas:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.swap > summary { list-style: none; }
+.swap > summary::-webkit-details-marker { display: none; }
+.swap > summary .row-name { min-width: 0; white-space: nowrap; }
+.swap[open] > summary .twisty .icon { transform: rotate(90deg); }
+.tl-swaps { flex-wrap: wrap; min-width: 0; }
+.tl-swaps .chip { max-width: 160px; }
+.chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .swap-size { font-size: var(--fs-sm); overflow-wrap: anywhere; }
 .swap-hides { align-items: start; }
 .chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
@@ -230,8 +250,8 @@ label.scrub { cursor: ew-resize; user-select: none; touch-action: none; }
 .color-wrap .chip { gap: 6px; color: var(--text); }
 .color-popover { left: 0; right: auto; width: max-content; color: var(--text); }
 .swatches { display: grid; grid-template-columns: repeat(4, 28px); gap: var(--sp-1); }
-.swatch { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius); }
-.swatch[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 1px; }
+.color-swatch { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius); }
+.color-swatch[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 1px; }
 .palette-swatches { grid-template-columns: repeat(8, 28px); max-height: 232px; overflow-y: auto; padding: 3px; }
 .popover-note { max-width: 252px; margin: var(--sp-1) 0 0; font-size: var(--fs-xs); }
 .color-custom { display: flex; align-items: center; gap: var(--sp-2); }
@@ -274,7 +294,7 @@ button.qa-row:hover, .history-row:hover { background: var(--bg-hover); }
 #history > p, #qa > p { margin: 0 var(--sp-3) var(--sp-2); font-size: var(--fs-sm); }
 
 /* --- Timeline ---------------------------------------------------------------------- */
-.timeline { background: var(--bg-panel); border-top: 1px solid var(--border); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-2); min-height: 104px; }
+.timeline { min-width: 0; background: var(--bg-panel); border-top: 1px solid var(--border); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-2); min-height: 104px; }
 .tl-bar { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
 .tl-counter { min-width: 56px; text-align: center; }
 .tl-render { font-size: var(--fs-sm); color: var(--text-muted); }

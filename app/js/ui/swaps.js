@@ -2,7 +2,7 @@
 // choisir son os, son ancre, les pièces qu'elle remplace et son z. L'activation par frame reste dans
 // la timeline ; le bouton « Dans la frame » d'ici fait la même chose.
 
-import { h, $, mount } from '../dom.js';
+import { h, $, mount, icon } from '../dom.js';
 import { state, on, backend, frameCount, uploadSwapImage, fetchSwapImage } from '../store.js';
 import { hint, addSwap, editSwap, toggleSwapHide, renameSwap, deleteSwap, swapHides, toggleSwap } from '../edits.js';
 
@@ -43,20 +43,23 @@ function nameFromFile(file) {
 }
 
 let busy = false;
-async function upload(name, file, apply) {
+/** `back` : bouton qui a lancé l'envoi ; inactif pendant l'envoi, il reprend le focus ensuite (ou ce que rend `apply`). */
+async function upload(name, file, back, apply) {
   if (busy) return;
   busy = true;
   render();
+  let then = back;
   try {
     const r = await uploadSwapImage(name, file);
     images.set(r.image, r.pixels);
-    apply(r);
+    then = apply(r) || back;
   } catch (e) {
     hint(e.message);
     showError(e.message);
   } finally {
     busy = false;
     render();
+    if (!document.activeElement || document.activeElement === document.body) focusFid(then);
   }
 }
 
@@ -68,19 +71,20 @@ function showError(message) {
 function addFromFile(file) {
   lastError = null;
   const name = nameFromFile(file);
-  upload(name, file, (r) => {
+  upload(name, file, 'sw-add', (r) => {
     const err = addSwap(name, r.image, r);
     if (err) return showError(err);
     opened.add(name);
+    return 'swap-canvas:' + name; // étape suivante : placer l'ancre
   });
 }
 
 function replaceImage(name) {
   pickFile((file) => {
     lastError = null;
-    upload(name, file, (r) => {
-      if (r.image === swaps()[name].image) return hint('Image identique à celle du remplacement : rien à changer.');
-      editSwap(name, 'image', r.image, 'Image');
+    upload(name, file, 'sw-image-' + name, (r) => {
+      if (r.image === swaps()[name].image) hint('Image identique à celle du remplacement : rien à changer.');
+      else editSwap(name, 'image', r.image, 'Image');
     });
   });
 }
@@ -149,6 +153,20 @@ function num(name, key, label, value, { min, max, unit, title, empty = false, on
   return h('div', { class: 'field' }, h('label', { for: id }, label), h('span', { class: 'field-input' }, input, unit && h('span', { class: 'unit' }, unit)));
 }
 
+function focusFid(fid) {
+  const el = $(`#swaps [data-fid="${CSS.escape(fid)}"]`);
+  if (el) el.focus();
+  return !!el;
+}
+
+/** Supprime, puis donne le focus à la carte voisine (à défaut au bouton d'ajout) : le bouton cliqué n'existe plus. */
+function removeSwap(name) {
+  const names = Object.keys(swaps()), i = names.indexOf(name);
+  const next = names[i + 1] || names[i - 1];
+  deleteSwap(name);
+  if (!(next && focusFid('sw-sum-' + next))) focusFid('sw-add');
+}
+
 // --- Une ligne par remplacement --------------------------------------------------------
 function swapCard(name) {
   const spec = swaps()[name];
@@ -159,22 +177,27 @@ function swapCard(name) {
   const nameInput = h('input', {
     type: 'text', class: 'txt', id: 'sw-name-' + name, 'data-fid': 'sw-name-' + name, value: name, spellcheck: 'false', autocomplete: 'off',
     title: 'Nom du remplacement, cité par les frames (anim.json). Entrée pour valider.',
-    onkeydown: (e) => e.key === 'Enter' && nameInput.blur(),
-    onchange: () => {
-      const to = nameInput.value.trim(), wasOpen = opened.has(name);
-      const err = renameSwap(name, to);
-      if (err) {
-        hint(err);
-        nameInput.value = name;
-      } else if (wasOpen && to !== name) {
-        opened.delete(name);
-        opened.add(to);
-        render();
-      }
-    },
+    // Entrée valide sans quitter le champ
+    onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); commitName(true); } },
+    onchange: () => commitName(false),
   });
+  const commitName = (keepFocus) => {
+    const to = nameInput.value.trim();
+    if (to === name) return;
+    const err = renameSwap(name, to);
+    if (err) {
+      hint(err);
+      nameInput.value = name;
+      return;
+    }
+    opened.delete(name);
+    opened.add(to);
+    render();
+    if (keepFocus) focusFid('sw-name-' + to);
+  };
   const details = h('details', { class: 'swap', open: opened.has(name), 'data-swap-card': name },
-    h('summary', { 'data-fid': 'sw-sum-' + name },
+    h('summary', { 'data-fid': 'sw-sum-' + name, title: name },
+      h('span', { class: 'twisty', 'aria-hidden': 'true' }, icon('chevron')),
       h('span', { class: 'row-name' }, name),
       h('span', { class: 'row-meta' }, spec.bone)),
     h('div', { class: 'swap-body' },
@@ -206,7 +229,7 @@ function swapCard(name) {
           title: 'Utiliser ce remplacement dans la frame courante (comme la pastille de la timeline)', onclick: () => toggleSwap(name),
         }, 'Dans la frame ', h('span', { class: 'sw-frame' }, state.frame + 1)),
         h('button', { class: 'btn small', 'data-fid': 'sw-image-' + name, disabled: busy, title: 'Choisir un autre PNG. L\'ancienne image quitte swaps/ ; Ctrl+Z la remet.', onclick: () => replaceImage(name) }, 'Changer l\'image…'),
-        h('button', { class: 'btn small', 'data-fid': 'sw-delete-' + name, title: 'Retirer ce remplacement du rig et de toutes les frames, et son image du dossier swaps/ (annulable)', onclick: () => deleteSwap(name) }, 'Supprimer'))));
+        h('button', { class: 'btn small', 'data-fid': 'sw-delete-' + name, title: 'Retirer ce remplacement du rig et de toutes les frames, et son image du dossier swaps/ (annulable)', onclick: () => removeSwap(name) }, 'Supprimer'))));
   details.addEventListener('toggle', () => (details.open ? opened.add(name) : opened.delete(name)));
   return details;
 }

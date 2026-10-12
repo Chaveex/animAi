@@ -124,8 +124,16 @@ function renderTopbar() {
       h('button', { class: 'icon-btn', 'data-fid': 'help', 'aria-label': 'Aide et raccourcis clavier', title: 'Raccourcis clavier (?)', onclick: toggleHelp }, icon('help'))));
 }
 
+/** Rend le focus au bouton `fid` quand l'élément qui l'avait vient de disparaître. */
+function refocus(fid) {
+  if (document.activeElement && document.activeElement !== document.body) return;
+  const el = $(`[data-fid="${fid}"]`);
+  if (el) el.focus();
+}
+
 export function closePopovers() {
   if (!syncOpen && !colorOpen && !retouchOpen) return false;
+  const opener = syncOpen ? 'sync' : colorOpen ? 'unassigned-color' : 'retouch-color';
   if (syncOpen) {
     syncOpen = false;
     renderTopbar();
@@ -134,6 +142,7 @@ export function closePopovers() {
     colorOpen = retouchOpen = false;
     renderLayerbar();
   }
+  refocus(opener);
   return true;
 }
 
@@ -208,7 +217,7 @@ function renderLayerbar() {
       }, h('span', { class: 'px-swatch', style: { background: state.unassignedColor } }), 'Non assignés'),
       colorOpen && h('div', { class: 'popover color-popover', role: 'group', 'aria-label': 'Couleur du cadre des pixels non assignés' },
         h('div', { class: 'swatches' }, UNASSIGNED_COLORS.map((c) => h('button', {
-          class: 'swatch', 'data-fid': 'unassigned-color:' + c.hex, style: { background: c.hex },
+          class: 'color-swatch', 'data-fid': 'unassigned-color:' + c.hex, style: { background: c.hex },
           'aria-pressed': String(state.unassignedColor === c.hex), 'aria-label': `${c.label} ${c.hex}`, title: `${c.label} ${c.hex}`,
           onclick: () => setUnassignedColor(c.hex),
         }))),
@@ -223,9 +232,9 @@ function renderLayerbar() {
       }, h('span', { class: 'px-swatch', style: { background: rc || 'transparent' } }), 'Couleur ', h('code', {}, (rc || '').toUpperCase())),
       retouchOpen && h('div', { class: 'popover color-popover', role: 'group', 'aria-label': 'Couleur du pinceau de retouche' },
         h('div', { class: 'swatches palette-swatches' }, state.palette.map((c) => h('button', {
-          class: 'swatch', 'data-fid': 'retouch-color:' + c.toLowerCase(), style: { background: c },
+          class: 'color-swatch', 'data-fid': 'retouch-color:' + c.toLowerCase(), style: { background: c },
           'aria-pressed': String(rc === c.toLowerCase()), 'aria-label': c.toUpperCase(), title: c.toUpperCase(),
-          onclick: () => { retouchOpen = false; setView({ retouchColor: c.toLowerCase(), retouchMode: 'paint' }); },
+          onclick: () => { retouchOpen = false; setView({ retouchColor: c.toLowerCase(), retouchMode: 'paint' }); refocus('retouch-color'); },
         }))),
         h('p', { class: 'muted popover-note' }, 'Seules les couleurs du sprite sont proposées : une retouche n\'ajoute jamais de couleur.'))),
     retouching && RETOUCH_MODES.map((m) => h('button', {

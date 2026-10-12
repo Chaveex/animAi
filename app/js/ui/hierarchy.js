@@ -44,7 +44,7 @@ function render() {
     const selected = isSelected(r);
     const hidden = (r.kind === 'bone' ? state.hiddenBones : state.hiddenParts).has(r.id);
     const eye = h('button', {
-      class: 'eye', tabindex: '-1', 'aria-pressed': String(hidden),
+      class: 'eye', tabindex: '-1', 'data-fid': 'eye:' + r.key, 'aria-pressed': String(hidden),
       'aria-label': `${hidden ? 'Afficher' : 'Masquer'} ${r.id}`, title: `${hidden ? 'Afficher' : 'Masquer'} (H)`,
       onclick: (e) => { e.stopPropagation(); toggleVisibility({ kind: r.kind, id: r.id }); },
     }, icon(hidden ? 'eyeOff' : 'eye'));
@@ -137,6 +137,7 @@ function onKey(e) {
       e.preventDefault();
       const err = deleteBone(r.id);
       if (err) hint(err);
+      else if (state.selection) focusRow(state.selection.kind + ':' + state.selection.id); // le parent, sélectionné à la place
       return;
     }
     default: return;
