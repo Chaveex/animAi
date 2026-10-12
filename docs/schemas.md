@@ -156,7 +156,7 @@ Une pose où la forme change (bras plié qui se tend, main qui s'ouvre) ne s'obt
 - L'image appartient, pour l'éditeur et la passe de contour, à la première pièce remplacée.
 - Les articulations des os dont toutes les pièces sont remplacées ne sont ni bouchées ni contrôlées dans ces frames (`frames[].hidden_bones` de `frames.json`).
 
-Limites : l'image est un bloc rigide (pas de coude dedans) ; elle n'a pas de zone cachée calculée ; les versions nommées du serveur (`/api/snapshots`) ne copient pas les images.
+Limites : l'image est un bloc rigide (pas de coude dedans) ; elle n'a pas de zone cachée calculée ; les versions nommées du serveur (`/api/snapshots`) ne copient que les images situées dans le dossier projet.
 
 ### IK deux os (optionnel)
 
@@ -452,7 +452,7 @@ Source de vérité unique, partagée avec la CLI et les éditions à la main :
 
 ### Routes
 
-Numéros de `docs/ux-spec.md` § 13.2. Toutes sont implémentées.
+Numéros de `docs/ux-spec.md` § 13.2. Toutes sont implémentées (22 et 23 : voir « Routes des pièces de remplacement » plus bas).
 
 | # | Route | Précisions par rapport à la spec |
 |---|---|---|
@@ -468,7 +468,7 @@ Numéros de `docs/ux-spec.md` § 13.2. Toutes sont implémentées.
 | 13 | `GET /api/render/frames/{i}.png` | identique octet pour octet à `frame_00i.png` de `animai animate <rig> --keyframes anim.json` quand `hide` est vide. `hide` retire des pièces sans changer le canvas. 404 sans animation ou hors bornes. |
 | 14 | `GET /api/render/frames/{i}.json` | `{width, height, origin, joints, angles, pivot, duration_ms, parts, owners_runs}`. `origin` = position du (0,0) du sprite dans le canvas (l'opposé de `origin` de `frames.json`). `joints` = joints posés en coordonnées sprite ; `angles` = angles monde ; `pivot` = pivot en pixels **canvas** ; `owners_runs` = pièce visible par pixel du canvas, index dans `parts`, `-1` = vide. |
 | 15 | `GET /api/report` | mêmes contrôles que `animai validate` sur l'état du disque. Sans `anim.json` : rapport de la pose de repos (une frame) au lieu d'un 404. Champ `pixels` en plus, voir ci-dessous. |
-| 16, 17, 18 | `/api/snapshots` | copie de `sprite.png`, `palette.json`, `rig.json`, `anim.json`. `id` = horodatage. La restauration émet `project.changed`. |
+| 16, 17, 18 | `/api/snapshots` | copie de `sprite.png`, `palette.json`, `rig.json`, `anim.json` et des images des remplacements. `id` = horodatage. La restauration émet `project.changed`. |
 | 19 | `GET /api/export/summary` | `{canvas: {width, height}, frames, duration_ms, fps, loop, pivot, name, formats: ["spritesheet", "gif"]}`, `pivot` en pixels canvas. |
 | 20 | `POST /api/export` | exécute `animate` → `validate` → `export` de la CLI dans le dossier projet. `{outputs: {spritesheet: [png, json], gif: [gif]}, summary, warnings, qa: {ok, failed, report}}`, chemins absolus. Format inconnu ou non implémenté : 422. L'export a lieu même si la QA échoue ; `qa.ok` le dit. |
 | 21 | `GET /api/events` | SSE : `rig.changed` / `anim.changed` `{rev, author, at}` (`rev: null` si supprimé), `project.changed` `{}`, commentaire `: ping` toutes les 15 s. |
@@ -494,6 +494,17 @@ Ajouts de l'étape 5 (aucune réponse existante ne perd de champ) :
 | `GET /api/rig/parts/{pièce}.json` | `{rev, name, bone, z, width, height, fill, bbox, pixels, hidden_pixels, missing, own_runs, hidden_runs}` : `own_runs` et `hidden_runs` sont des masques RLE ligne par ligne (`[valeur, longueur]`, 1 = dans le masque) des pixels propres et de la zone cachée remplie ; `missing` = pixels sans donnée (`fill: "none"`). |
 | `POST /api/anim/preset`, `/api/anim/retime`, `/api/export` | champ ajouté : `warnings_coded`. |
 | `POST /api/snapshots` | accepté dans un dossier sans projet ; la version porte `empty: true`. La restaurer supprime `sprite.png`, `palette.json`, `rig.json`, `anim.json` et répond `{"empty": true}` ; `GET /api/project` répond ensuite 404. Une restauration supprime désormais tout fichier projet absent de la version. |
+
+Routes des pièces de remplacement (numéros 22 et 23 de la spec) :
+
+| Route | Comportement |
+|---|---|
+| `POST /api/swaps/{nom}/image` | multipart `file`. `nom` : une lettre, puis lettres, chiffres, `_` ou `-` (64 caractères au plus). L'image passe le contrôle du rendu (alpha 0/255, au moins un pixel opaque, couleurs de la palette du sprite) et fait 512 px au plus. Elle est écrite dans `swaps/<nom>.png`, ré-encodée par l'encodeur du moteur. **Aucun fichier n'est écrasé** : si `swaps/<nom>.png` existe avec un autre contenu, l'image va dans `swaps/<nom>_2.png`, `_3`… ; la même image renvoyée deux fois réutilise le même fichier. Réponse : `{image, width, height}`, `image` étant le chemin relatif à écrire dans `rig.swaps.<nom>.image`. `rig.json` n'est pas modifié : l'app déclare le remplacement par `PUT /api/rig`, ce qui garde la déclaration annulable. 422 : `details.code` = `swap_image_refused` (avec `core_message`) ou `swap_name_invalid`. |
+| `GET /api/swaps/{nom}.png` | l'image du remplacement `nom` de `rig.json` sur le disque, ré-encodée. 404 : `swap_unknown` (pas déclaré) ou `swap_image_missing` (fichier absent ou illisible). |
+
+**Images rangées par le serveur.** Une image est « rangée » quand son chemin dans `rig.swaps` est `swaps/<fichier>.png` (directement dans `swaps/`). `PUT /api/rig` les suit : une image rangée que plus aucun remplacement ne cite après l'écriture est déplacée dans `.animai/trash/swaps/` (jamais effacée) ; une image citée de nouveau et absente de `swaps/` en revient avant l'écriture. Supprimer un remplacement ou changer son image depuis l'éditeur vide donc `swaps/`, et l'annulation remet le fichier. Les images ailleurs (`art/x.png`, chemin absolu) ne sont jamais déplacées, pas plus que lors d'une écriture directe de `rig.json` sur le disque. `POST /api/swaps/{nom}/image` ne réutilise pas le nom d'une image différente présente dans la corbeille.
+
+**Versions nommées.** `POST /api/snapshots` copie aussi les images citées par `rig.swaps` qui sont dans le dossier projet (`meta.images` = leurs chemins) ; la restauration les réécrit à leur place, puis fait revenir de la corbeille celles que le rig restauré cite encore.
 
 `warnings_coded` = la liste `warnings` où chaque phrase devient `{code, params, message}`. `code` est stable, `params` contient les valeurs extraites (chaînes), `message` est la phrase d'origine. Codes : `unknown_key`, `bone_not_in_rig`, `z_override_unknown`, `ik_not_in_rig`, `ik_out_of_reach`, `bone_reparented`, `joint_outside_sprite`, `part_empty`, `part_overridden`, `pixels_multi_assigned`, `pixels_unassigned`, `view_out_of_scope`, `duration_off_grid`, `resample_key_poses_dropped`, `resample_drops_frames`, `resample_changes_holds`, `too_many_frames`, `gif_durations_rounded`, `gif_quantized`, `pinhole`, `outline_bare`, `ground_offset`, `joints_on_edge`, `not_validated`, `qa_failing`, `rest_pose_differs`, `semi_transparent_binarized`, `no_background_detected`, `background_not_found`, `background_remains`, `sprite_small`, `rig_invalid_on_disk`, `doc_invalid_on_disk`, et `other` pour une phrase non reconnue. La table est dans `animai/core/messages.py` ; les phrases sont reconnues par motif, pas produites avec leur code à la source.
 
@@ -574,6 +585,7 @@ Vague 3 (lead dev) : écarts avec le contrat, décalage de repos.
 38. `rig.fill_holes` (défaut `true`) ; section « Bouchage des trous ». Le rendu change de quelques pixels sur les poses qui ouvraient un trou.
 39. `anim.json` : `paint` par frame ; section « Retouches par frame ». `frames.json` : `frames[].retouched`.
 40. `rig.swaps` et `anim.json` `swap` par frame ; section « Pièces de remplacement ». `frames.json` : `frames[].swap`, `frames[].hidden_bones`.
+41. Serveur : `POST /api/swaps/{nom}/image` et `GET /api/swaps/{nom}.png`, pour déclarer un remplacement depuis l'éditeur. `PUT /api/rig` range dans `.animai/trash/` les images de `swaps/` qui ne sont plus citées et les en fait revenir ; les versions nommées copient les images des remplacements (`meta.images`).
 
 ## Grands fichiers et grille non entière (`prepare`)
 

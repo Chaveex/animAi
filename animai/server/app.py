@@ -199,6 +199,16 @@ def create_app(project_dir: str | Path, app_dir: str | Path | None = None) -> Fa
     def get_part_json(name: str):
         return project.part_json(name)
 
+    # ------------------------------------------------------------ replacement images
+
+    @app.post("/api/swaps/{name}/image")
+    def put_swap_image(name: str, file: UploadFile = File(...)):
+        return project.put_swap_image(name, file.file.read())
+
+    @app.get("/api/swaps/{name}.png")
+    def get_swap_png(name: str, image: str = ""):
+        return png(project.swap_png(name))
+
     # ------------------------------------------------------------ animation
 
     @app.get("/api/anim")

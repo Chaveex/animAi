@@ -197,11 +197,22 @@ Pour corriger à la main ce que le rendu ne sait pas faire : un pixel manquant, 
 - Les retouches sont en coordonnées du sprite : **elles ne suivent pas les membres**. Si la pose de la frame change ensuite, un message le rappelle. « Capturer la pose » ne recopie pas les retouches dans la nouvelle frame.
 - Peindre dans la marge agrandit le canvas d'export (toutes les frames, pivot inchangé).
 
-### Pièces de remplacement — coquille : activation par frame
+### Pièces de remplacement — coquille : oui (sauf en démo)
 
-Quand `rig.json` déclare des `swaps` (images dessinées à la main, voir `docs/schemas.md`), la barre de la timeline montre un groupe « Remplacement » : une pastille par image. Elle active ou retire le remplacement **dans la frame courante** (`frames[i].swap`), en un pas d'annulation. L'image suit son os : on la place et on la tourne avec l'outil Déplacer.
+Une pose que la rotation ne sait pas faire (bras qui se tend, main qui s'ouvre) se dessine, puis se branche sur les frames qui en ont besoin (`rig.swaps`, voir `docs/schemas.md`).
 
-Pas encore construit : déclarer un remplacement depuis l'éditeur (image, os, ancre, pièces remplacées), qui s'écrit pour l'instant dans `rig.json`. Une image redessinée sur le disque est reprise au prochain rendu (recharger la page). Le mode démo ne dessine pas les remplacements.
+**Déclarer.** Panneau droit, section « Remplacements », aux étapes Rigger et Animer.
+
+- **« + Image… »** : choisir un PNG. Le cœur le contrôle (couleurs de la palette du sprite uniquement, alpha 0 ou 255) ; refusé, la raison s'affiche dans la section et rien n'est créé. Accepté, le remplacement est ajouté en un pas d'annulation : nom tiré du nom de fichier, os = l'os sélectionné (ou celui de la pièce sélectionnée ; à défaut le premier os qui porte une pièce), pièces remplacées = celles de cet os et de ses descendants (un bras entier), ancre au centre de l'image.
+- Chaque remplacement est une ligne dépliable : image en zoom entier sur damier, puis Nom, Os, Ancre X / Y, Z-index (vide = z de la première pièce remplacée), pièces remplacées (une pastille par pièce du rig).
+- **Ancre** : le pixel de l'image posé sur le joint de l'os. Clic dans l'image, flèches quand l'image a le focus (1 px, `Maj` = 5), ou saisie. Elle est cadrée dans l'image ; hors de l'image, un message le dit.
+- Un remplacement remplace toujours au moins une pièce : décocher la dernière est refusé avec un message.
+- **« Changer l'image… »** n'écrase rien : `Ctrl+Z` revient à l'ancienne image. **« Supprimer »** retire le remplacement du rig et de toutes les frames (annulable). Dans les deux cas l'image qui n'est plus utilisée quitte le dossier `swaps/` du projet ; le serveur la garde dans `.animai/trash/` et la remet en place à l'annulation.
+- Renommer ou supprimer un pivot met à jour l'os des remplacements qu'il porte.
+
+**Utiliser.** La barre de la timeline montre un groupe « Remplacement » : une pastille par image. Elle active ou retire le remplacement **dans la frame courante** (`frames[i].swap`), en un pas d'annulation ; la pastille « Dans la frame N » de la section fait la même chose. L'image suit son os : on la place et on la tourne avec l'outil Déplacer.
+
+Limites : une image redessinée sur le disque est reprise au prochain rendu (recharger la page). Le mode démo ne dessine pas les remplacements et n'en déclare pas (section visible, bouton inactif, raison écrite).
 
 ### Outils spécifiés, pas encore construits
 
@@ -529,6 +540,8 @@ Limite assumée : peindre une label map reste une tâche visuelle. Le clavier pe
 | 19 | `GET /api/export/summary` | — | `{canvas: {width, height}, frames, duration_ms, fps, loop, pivot: [x, y], formats: […]}` | 404 |
 | 20 | `POST /api/export` | `{formats: ["spritesheet","gif",…]}` | `{outputs: {<format>: [chemins]}, summary, warnings, qa: {ok, failed, report}}` — l'export a lieu même si la QA échoue | 422 |
 | 21 | `GET /api/events` | — | flux SSE, voir 13.3 | |
+| 22 | `POST /api/swaps/{nom}/image` | multipart : `file` (PNG) | `{image, width, height}` ; `image` = chemin à écrire dans `rig.swaps.<nom>.image`. N'écrit pas `rig.json`, n'écrase aucun fichier. | 422 (couleur hors palette, alpha non binaire, image vide, nom invalide) |
+| 23 | `GET /api/swaps/{nom}.png` | — | image d'un remplacement déclaré dans `rig.json` | 404 |
 
 Priorités : **P0** (l'app tourne) 1, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 21 · **P1** (parcours complet) 2, 11, 12, 20 · **P2** 10, 16 à 19, et `owners_runs` dans 14.
 
@@ -610,7 +623,7 @@ puis ouvrir `http://localhost:8765/` (état vide) ou `http://localhost:8765/?dem
 | `js/preview.js` | Cache des frames demandées à la couche de données |
 | `js/shortcuts.js` | Table unique des raccourcis |
 | `js/label-palette.js` | Couleurs, motifs, numéros de la label map |
-| `js/ui/*.js` | Barre du haut, hiérarchie, inspecteur, QA, historique, timeline |
+| `js/ui/*.js` | Barre du haut, hiérarchie, inspecteur, remplacements, QA, historique, timeline |
 | **`js/data/api.js`** | **Couche d'accès aux données, point d'entrée unique.** Choisit le backend. |
 | `js/data/http-backend.js` | Client du vrai serveur (section 13). Vérifié contre lui (§ 15). |
 | `tests/preview-vs-export.mjs` | Test automatisé « l'aperçu est identique à l'export » (§ 14.5) |
@@ -635,6 +648,7 @@ Tout ce qui suit vit dans `js/data/demo-core.js`, est marqué comme tel en tête
 | Fichiers projet, révisions, conflits, versions | En mémoire, perdus au rechargement. |
 | Claude | Deux boutons dans le panneau de synchro : « Simuler une modification de Claude », « Simuler un conflit d'écriture ». |
 | Export | Indisponible ; téléchargement de `rig.json` et `anim.json` à la place. |
+| Pièces de remplacement | Indisponibles : ni déclarées, ni dessinées. |
 
 Le sprite d'exemple (humanoïde 64×64, 11 couleurs, 13 os, 13 pièces) laisse volontairement 3 pixels non assignés sur le contour de la tête, pour que la QA ait un échec localisé à montrer.
 

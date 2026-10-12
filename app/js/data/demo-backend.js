@@ -90,7 +90,7 @@ export function createDemoBackend() {
 
   return {
     kind: 'demo',
-    capabilities: { export: false },
+    capabilities: { export: false, swaps: false },
 
     async getProject() {
       if (!project) return null;
@@ -214,6 +214,14 @@ export function createDemoBackend() {
 
     async exportProject() {
       throw new ApiError('Export indisponible en mode démo : il est produit par le cœur, via le serveur.', 501);
+    },
+
+    async putSwapImage() {
+      throw new ApiError('Pièces de remplacement indisponibles en mode démo : l\'image est contrôlée et dessinée par le cœur, via le serveur.', 501);
+    },
+
+    async getSwapImage() {
+      throw new ApiError('Pièces de remplacement indisponibles en mode démo.', 501);
     },
 
     subscribe(fn) {

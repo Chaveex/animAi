@@ -1,7 +1,7 @@
 // Éditions de haut niveau partagées par le viewport, l'inspecteur et les raccourcis.
 // Chacune passe par une commande annulable du store.
 
-import { state, exec, setCmd, editCmd, frameCount, setView, setLayer, setStep, isAnimStep, emit, handRegionParts } from './store.js';
+import { state, exec, setCmd, editCmd, frameCount, setView, setLayer, setStep, isAnimStep, emit, handRegionParts, partsOfBone } from './store.js';
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
@@ -67,6 +67,78 @@ export function toggleSwap(name) {
   exec(setCmd('anim', ['frames', frame, 'swap'], list.length ? list : undefined, `${on ? 'Retirer' : 'Utiliser'} le remplacement « ${name} » (frame ${frame + 1})`));
   const spec = (state.rig.swaps || {})[name] || {};
   if (!on) hint(`« ${name} » remplace ${(spec.hides || []).join(', ') || 'les pièces de ' + spec.bone} dans cette frame. L'image suit l'os « ${spec.bone} ».`);
+}
+
+/** Pièces qu'un remplacement cache : sa liste `hides`, sinon toutes les pièces de son os (règle du cœur). */
+export function swapHides(name) {
+  const spec = (state.rig.swaps || {})[name] || {};
+  return spec.hides && spec.hides.length ? [...spec.hides] : partsOfBone(spec.bone);
+}
+
+/**
+ * Déclare un remplacement dans rig.json. `image` = chemin rendu par le serveur, `size` = { width, height }.
+ * Os : celui de la sélection ; pièces remplacées : celles de cet os et de ses descendants (un bras entier).
+ * Renvoie un message d'erreur ou null.
+ */
+export function addSwap(name, image, size) {
+  const bones = state.rig.bones;
+  const carries = (b) => partsOfBone(b).length > 0;
+  let bone = anchorBone();
+  if (!carries(bone)) bone = Object.keys(bones).find(carries);
+  if (!bone) return 'Aucune pièce à remplacer : créez d\'abord une pièce à l\'étape Rigger.';
+  const root = !bones[bone].parent || !bones[bones[bone].parent];
+  const hides = (root ? [bone] : boneSubtree(bone)).flatMap(partsOfBone);
+  exec(editCmd(`Ajouter le remplacement « ${name} » (os « ${bone} »)`, (d) => {
+    d.rig.swaps = { ...(d.rig.swaps || {}), [name]: { image, bone, anchor: [size.width >> 1, size.height >> 1], hides } };
+  }));
+  hint(`Remplacement « ${name} » ajouté sur « ${bone} ». Cliquez dans l'image le pixel qui se pose sur le joint, puis activez-le dans une frame (étape Animer).`);
+  return null;
+}
+
+/** Modifie un champ d'un remplacement (`undefined` retire le champ). */
+export function editSwap(name, key, value, label, merge = false) {
+  exec(setCmd('rig', ['swaps', name, key], value, `${label} du remplacement « ${name} »`, merge ? `swap:${name}:${key}` : null));
+}
+
+/** Coche ou décoche une pièce remplacée. Un remplacement remplace toujours au moins une pièce. */
+export function toggleSwapHide(name, part) {
+  const cur = swapHides(name);
+  const list = cur.includes(part) ? cur.filter((p) => p !== part) : state.partNames.filter((p) => p === part || cur.includes(p));
+  if (!list.length) return hint('Un remplacement remplace au moins une pièce : cochez-en une autre avant de retirer celle-ci.');
+  editSwap(name, 'hides', list, 'Pièces remplacées');
+}
+
+/** Renomme un remplacement, dans rig.json et dans les frames qui l'utilisent. Renvoie un message d'erreur ou null. */
+export function renameSwap(name, to) {
+  to = String(to || '').trim();
+  if (to === name) return null;
+  const err = nameError(to, Object.keys(state.rig.swaps || {}));
+  if (err) return err;
+  exec(editCmd(`Renommer le remplacement « ${name} » en « ${to} »`, (d) => {
+    d.rig.swaps = renameKey(d.rig.swaps, name, to);
+    for (const f of (d.anim && d.anim.frames) || []) if (f.swap) f.swap = f.swap.map((n) => (n === name ? to : n));
+  }));
+  return null;
+}
+
+/**
+ * Retire un remplacement de rig.json et de toutes les frames. Le serveur range alors son image hors de
+ * `swaps/` (dans `.animai/trash/`) si plus aucun remplacement ne la cite, et la remet en place à l'annulation.
+ */
+export function deleteSwap(name) {
+  if (!(state.rig.swaps || {})[name]) return;
+  let used = 0;
+  exec(editCmd(`Supprimer le remplacement « ${name} »`, (d) => {
+    delete d.rig.swaps[name];
+    if (!Object.keys(d.rig.swaps).length) delete d.rig.swaps;
+    for (const f of (d.anim && d.anim.frames) || []) {
+      if (!f.swap || !f.swap.includes(name)) continue;
+      used++;
+      f.swap = f.swap.filter((n) => n !== name);
+      if (!f.swap.length) delete f.swap;
+    }
+  }));
+  hint(`Remplacement « ${name} » supprimé${used ? ` (retiré de ${used} frame${used > 1 ? 's' : ''})` : ''}. Son image quitte le dossier swaps/. Ctrl+Z pour annuler : elle revient.`);
 }
 
 /** Retire toutes les retouches de la frame courante. */
@@ -160,6 +232,7 @@ export function renameBone(bone, name) {
       if (Array.isArray(c.chain)) c.chain = c.chain.map((b) => (b === bone ? name : b));
       if (c.target_bone === bone) c.target_bone = name;
     }
+    for (const s of Object.values(d.rig.swaps || {})) if (s.bone === bone) s.bone = name;
     for (const f of (d.anim && d.anim.frames) || []) {
       if (f.bones) f.bones = renameKey(f.bones, bone, name);
       if (f.z) f.z = renameKey(f.z, bone, name);
@@ -182,6 +255,7 @@ export function deleteBone(bone) {
     delete d.rig.bones[bone];
     for (const o of Object.values(d.rig.bones)) if (o.parent === bone) o.parent = parent;
     for (const p of Object.values(d.rig.parts)) if (p.bone === bone) p.bone = parent;
+    for (const s of Object.values(d.rig.swaps || {})) if (s.bone === bone) s.bone = parent;
     for (const k of lostIk) delete d.rig.ik[k];
     for (const f of (d.anim && d.anim.frames) || []) {
       if (f.bones) delete f.bones[bone];

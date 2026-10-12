@@ -144,7 +144,9 @@ export function setStep(step) {
 }
 
 // --- Passerelles vers le backend (le reste de l'UI n'importe jamais api.js) -------
-export const backend = { kind: api.kind, isDemo: !!api.demo, canExport: !!api.capabilities.export };
+export const backend = { kind: api.kind, isDemo: !!api.demo, canExport: !!api.capabilities.export, canSwap: !!api.capabilities.swaps };
+export const uploadSwapImage = (name, file) => api.putSwapImage(name, file);
+export const fetchSwapImage = (name, image) => api.getSwapImage(name, image);
 export const importImage = (img) => openProject(`Ouvrir « ${img.name} »`, () => api.importImage(img));
 export const loadExample = () => openProject('Charger l\'exemple', () => api.demo.loadExample());
 export const exportProject = (options) => api.exportProject(options);

@@ -876,6 +876,137 @@ def test_part_routes_unknown_part_and_fill_none(client, folder):
 
 
 # --------------------------------------------------------------------------- #
+# replacement images (rig.swaps)
+# --------------------------------------------------------------------------- #
+
+def swap_block(folder, w=6, h=3, colour=None) -> np.ndarray:
+    """A small image in one colour of the sprite, with one transparent corner."""
+    sprite = np.array(Image.open(folder / "sprite.png").convert("RGBA"))
+    image = np.tile(sprite[sprite[..., 3] > 0][0] if colour is None else colour, (h, w, 1)).astype(np.uint8)
+    image[0, 0] = 0
+    return image
+
+
+def png_bytes(image: np.ndarray) -> bytes:
+    buf = io.BytesIO()
+    Image.fromarray(image, "RGBA").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def post_swap(client, name, image):
+    return client.post(f"/api/swaps/{name}/image", files={"file": ("x.png", png_bytes(image), "image/png")})
+
+
+def test_swap_image_upload_stores_the_file_and_leaves_the_rig_alone(client, folder):
+    rig_before = (folder / "rig.json").read_bytes()
+    image = swap_block(folder)
+    response = post_swap(client, "jab", image)
+    assert response.status_code == 200, response.text
+    assert response.json() == {"image": "swaps/jab.png", "width": 6, "height": 3}
+    stored = np.array(Image.open(folder / "swaps" / "jab.png").convert("RGBA"))
+    assert np.array_equal(stored, image)
+    assert (folder / "rig.json").read_bytes() == rig_before, "the app declares the swap itself, with PUT /api/rig"
+
+
+def test_swap_image_upload_never_overwrites(client, folder):
+    first, other = swap_block(folder), swap_block(folder, w=4, h=4)
+    assert post_swap(client, "jab", first).json()["image"] == "swaps/jab.png"
+    assert post_swap(client, "jab", first).json()["image"] == "swaps/jab.png", "same image: same file"
+    assert post_swap(client, "jab", other).json()["image"] == "swaps/jab_2.png"
+    assert post_swap(client, "jab", first).json()["image"] == "swaps/jab.png"
+    assert np.array_equal(np.array(Image.open(folder / "swaps" / "jab.png").convert("RGBA")), first)
+    assert sorted(p.name for p in (folder / "swaps").iterdir()) == ["jab.png", "jab_2.png"]
+
+
+def test_swap_image_upload_refuses_what_the_engine_would_refuse(client, folder):
+    alien = swap_block(folder, colour=(255, 0, 255, 255))
+    body = assert_error(post_swap(client, "jab", alien), 422, "swap_image_refused")
+    assert "palette" in body["details"]["core_message"]
+    soft = swap_block(folder)
+    soft[1, 1, 3] = 128
+    assert_error(post_swap(client, "jab", soft), 422, "swap_image_refused")
+    empty = np.zeros((3, 3, 4), dtype=np.uint8)
+    assert_error(post_swap(client, "jab", empty), 422, "swap_image_refused")
+    not_an_image = client.post("/api/swaps/jab/image", files={"file": ("x.png", b"hello", "image/png")})
+    assert_error(not_an_image, 422, "swap_image_refused")
+    assert_error(post_swap(client, "1 bad name", swap_block(folder)), 422)
+    assert not (folder / "swaps").exists(), "nothing is written for a refused image"
+
+
+def test_swap_declared_after_the_upload_is_served_and_rendered(client, folder):
+    image = swap_block(folder)
+    path = post_swap(client, "jab", image).json()["image"]
+    assert assert_error(client.get("/api/swaps/jab.png"), 404)["details"]["code"] == "swap_unknown"
+    current = client.get("/api/rig").json()
+    current["data"]["swaps"] = {"jab": {"image": path, "bone": "forearm_r", "anchor": [1, 1]}}
+    put = client.put("/api/rig", json={"base_rev": current["rev"], "data": current["data"]})
+    assert put.status_code == 200, put.text
+    assert np.array_equal(png_array(client.get("/api/swaps/jab.png")), image)
+
+    frames = [{"duration_ms": 100, "bones": {}}, {"duration_ms": 100, "bones": {}, "swap": ["jab"]}]
+    put_anim(client, frames)
+    plain, swapped = png_array(client.get("/api/render/frames/0.png")), png_array(client.get("/api/render/frames/1.png"))
+    assert not np.array_equal(plain, swapped), "the frame that lists the swap draws it"
+
+    (folder / "swaps" / "jab.png").unlink()
+    assert_error(client.get("/api/swaps/jab.png"), 404, "swap_image_missing")
+
+
+def put_swaps(client, swaps):
+    current = client.get("/api/rig").json()
+    if swaps:
+        current["data"]["swaps"] = swaps
+    else:
+        current["data"].pop("swaps", None)
+    response = client.put("/api/rig", json={"base_rev": current["rev"], "data": current["data"]})
+    assert response.status_code == 200, response.text
+
+
+def test_deleting_a_swap_puts_its_image_away_and_undoing_brings_it_back(client, folder):
+    image, other = swap_block(folder), swap_block(folder, w=4, h=4)
+    post_swap(client, "jab", image)
+    spec = {"image": "swaps/jab.png", "bone": "forearm_r", "anchor": [1, 1]}
+    put_swaps(client, {"jab": spec, "twin": dict(spec)})
+    put_swaps(client, {"jab": spec})
+    assert (folder / "swaps" / "jab.png").is_file(), "still cited by another swap"
+
+    put_swaps(client, None)                                     # delete
+    assert not (folder / "swaps" / "jab.png").exists()
+    trashed = folder / ".animai" / "trash" / "swaps" / "jab.png"
+    assert np.array_equal(np.array(Image.open(trashed).convert("RGBA")), image), "put away, not erased"
+
+    assert post_swap(client, "jab", other).json()["image"] == "swaps/jab_2.png", "the name stays the trashed image's"
+    put_swaps(client, {"jab": spec})                            # undo
+    assert np.array_equal(png_array(client.get("/api/swaps/jab.png")), image)
+    assert not trashed.exists()
+
+
+def test_put_rig_only_puts_away_the_images_stored_in_swaps(client, folder):
+    art = folder / "art"
+    art.mkdir()
+    (art / "mine.png").write_bytes(png_bytes(swap_block(folder)))
+    put_swaps(client, {"mine": {"image": "art/mine.png", "bone": "forearm_r", "anchor": [1, 1]}})
+    put_swaps(client, None)
+    assert (art / "mine.png").is_file(), "a file the app did not store is left alone"
+
+
+def test_snapshot_keeps_the_swap_images(client, folder):
+    image = swap_block(folder)
+    post_swap(client, "jab", image)
+    put_swaps(client, {"jab": {"image": "swaps/jab.png", "bone": "forearm_r", "anchor": [1, 1]}})
+    snap = client.post("/api/snapshots", json={"label": "with jab"}).json()
+    assert snap["images"] == ["swaps/jab.png"]
+
+    (folder / "swaps" / "jab.png").write_bytes(png_bytes(swap_block(folder, w=4, h=4)))    # redrawn on disk
+    assert client.post(f"/api/snapshots/{snap['id']}/restore").status_code == 200
+    assert np.array_equal(png_array(client.get("/api/swaps/jab.png")), image)
+
+    put_swaps(client, None)                                     # image put away, then the version is restored
+    assert client.post(f"/api/snapshots/{snap['id']}/restore").status_code == 200
+    assert np.array_equal(png_array(client.get("/api/swaps/jab.png")), image)
+
+
+# --------------------------------------------------------------------------- #
 # 21: events, with a real `animai serve` process
 # --------------------------------------------------------------------------- #
 

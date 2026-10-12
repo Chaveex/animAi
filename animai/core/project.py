@@ -18,10 +18,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
 import shutil
 import threading
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import numpy as np
 
@@ -29,7 +31,8 @@ from . import export as export_mod
 from . import pipeline, qa, render
 from .anim import list_presets, load_anim, load_preset, retarget, validate_anim
 from .errors import AnimaiError
-from .imageio import decode_rgba, dumps_json, encode_png, normalize_rgba, read_json, save_png, write_json
+from .imageio import (decode_rgba, dumps_json, encode_png, load_rgba, normalize_rgba, read_json, save_png,
+                      write_json)
 from .messages import classify_all
 from .rig import (UNASSIGNED, apply_labelmap_delta, build_label_map, cut_parts, load_rig, normalize_rig,
                   validate_rig)
@@ -40,6 +43,8 @@ from .timing import resample
 DOCS = {"rig": "rig.json", "anim": "anim.json"}
 SPRITE_NAME = "sprite.png"
 MAX_IMPORT_SIZE = 512
+SWAPS_DIR = "swaps"
+SWAP_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]{0,63}\Z")
 EXPORT_FORMATS = ["spritesheet", "gif"]
 REST_ANIM = {"version": 1, "name": "rest", "loop": False, "fps": 10, "frames": [{"duration_ms": 100}]}
 
@@ -370,10 +375,18 @@ class Project:
             raise ProjectError(f"rig.json invalide : {exc}", 422, code="rig_invalid", core=exc) from None
 
     def put_rig(self, base_rev, data) -> tuple[dict, dict]:
+        """Write rig.json. The images of ``swaps/`` follow: one that no swap cites any more
+        goes to ``.animai/trash/``, one that is cited again comes back from there."""
         with self.lock:
             self._valid_rig(data)
             self._check_base("rig", base_rev, data)
+            try:
+                before = self._stored_images(self.read_doc("rig")["data"])
+            except ProjectError:
+                before = set()
+            self._recall_images(data)
             event = self._write("rig", data)
+            self._discard_images(before, data)
             return {"rev": event["rev"]}, event
 
     def _rig_and_labels(self):
@@ -423,6 +436,90 @@ class Project:
             event = self._write("rig", new)
             return {"rev": event["rev"], "regions": {n: new["parts"][n]["region"] for n in names},
                     "changed": changed, "full_reencode": full}, event
+
+    # ------------------------------------------------------------ replacement images (rig.swaps)
+
+    def put_swap_image(self, name: str, data: bytes) -> dict:
+        """Check an uploaded replacement image against the sprite and store it in ``swaps/``.
+
+        rig.json is not touched: the app declares the swap itself (``put_rig``), so the
+        declaration stays one undoable edit. An existing file is never overwritten: a
+        different image of the same name is stored as ``<name>_2.png``, ``<name>_3.png``...
+        (undoing the edit then points the rig back to a file that is still there).
+        """
+        with self.lock:
+            if not (isinstance(name, str) and SWAP_NAME.match(name)):
+                raise ProjectError("Nom de remplacement invalide : une lettre, puis lettres, chiffres, « _ » ou « - ».",
+                                   422, code="swap_name_invalid")
+            rgba, _ = self._sprite()
+            try:
+                image = normalize_rgba(decode_rgba(data))
+                render.check_swap_images({"swaps": {name: {}}}, rgba, {name: image})
+            except AnimaiError as exc:
+                raise ProjectError(f"Image refusée : {exc}", 422, code="swap_image_refused", core=exc) from None
+            h, w = image.shape[:2]
+            if max(h, w) > MAX_IMPORT_SIZE:
+                raise ProjectError(f"Image refusée : {w} x {h} px, le maximum est {MAX_IMPORT_SIZE} px.", 422)
+            raw = encode_png(image)
+            n = 1
+            while True:
+                rel = f"{SWAPS_DIR}/{name}{'' if n == 1 else f'_{n}'}.png"
+                path = self.root / rel
+                # a name is taken by another image in swaps/ or in the trash (an undo may bring that one back)
+                if any(p.exists() and not (p.is_file() and p.read_bytes() == raw)
+                       for p in (path, self._trash_dir() / rel)):
+                    n += 1
+                    continue
+                if not path.exists():           # else the same image again: reuse the file
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(raw)
+                break
+            return {"image": rel, "width": int(w), "height": int(h)}
+
+    def _trash_dir(self) -> Path:
+        return self.root / ".animai" / "trash"
+
+    @staticmethod
+    def _stored_images(rig) -> set[str]:
+        """Swap images of a rig that live directly in ``swaps/``: the files the app stores and may put away."""
+        out = set()
+        swaps = rig.get("swaps") if isinstance(rig, dict) else None
+        for spec in swaps.values() if isinstance(swaps, dict) else []:
+            image = spec.get("image") if isinstance(spec, dict) else None
+            if not isinstance(image, str):
+                continue
+            path = PurePosixPath(image.replace("\\", "/"))
+            if len(path.parts) == 2 and path.parts[0] == SWAPS_DIR and path.suffix.lower() == ".png":
+                out.add(path.as_posix())
+        return out
+
+    def _recall_images(self, rig) -> None:
+        """Bring back from the trash the stored images this rig cites (undo of a deletion)."""
+        for rel in self._stored_images(rig):
+            if not (self.root / rel).exists() and (self._trash_dir() / rel).is_file():
+                (self.root / rel).parent.mkdir(parents=True, exist_ok=True)
+                os.replace(self._trash_dir() / rel, self.root / rel)
+
+    def _discard_images(self, before: set[str], rig) -> None:
+        """Move to ``.animai/trash/`` the stored images no swap cites any more. Nothing is erased."""
+        for rel in before - self._stored_images(rig):
+            if (self.root / rel).is_file():
+                (self._trash_dir() / rel).parent.mkdir(parents=True, exist_ok=True)
+                os.replace(self.root / rel, self._trash_dir() / rel)
+
+    def swap_png(self, name: str) -> bytes:
+        """The image of a swap declared in rig.json, re-encoded by the engine encoder."""
+        with self.lock:
+            swaps = self.read_doc("rig")["data"].get("swaps")
+            spec = swaps.get(name) if isinstance(swaps, dict) else None
+            if not (isinstance(spec, dict) and isinstance(spec.get("image"), str) and spec["image"]):
+                raise ProjectError(f"Remplacement « {name} » inconnu dans rig.json.", 404, code="swap_unknown")
+            try:
+                path = pipeline.swap_paths({"swaps": {name: spec}}, self.path("rig").parent)[name]
+                return encode_png(normalize_rgba(load_rgba(path)))
+            except AnimaiError as exc:
+                raise ProjectError(f"Image du remplacement « {name} » absente ou illisible ({spec['image']}).", 404,
+                                   code="swap_image_missing", core=exc) from None
 
     # ------------------------------------------------------------ animation
 
@@ -676,6 +773,31 @@ class Project:
     def _snap_dir(self) -> Path:
         return self.root / ".animai" / "snapshots"
 
+    def _inside(self, rel) -> Path | None:
+        """``root / rel`` when ``rel`` is a relative path that stays in the project and out of ``.animai``."""
+        if not isinstance(rel, str) or not rel or Path(rel).is_absolute() or PurePosixPath(rel).is_absolute():
+            return None
+        path = (self.root / rel).resolve()
+        if not path.is_relative_to(self.root) or path == self.root or ".animai" in path.relative_to(self.root).parts:
+            return None
+        return path
+
+    def _cited_images(self) -> list[str]:
+        """Images of ``rig.swaps`` kept with a named version: the existing files inside the project folder."""
+        try:
+            swaps = self.read_doc("rig")["data"].get("swaps")
+        except (ProjectError, AttributeError):
+            return []
+        out = []
+        for spec in swaps.values() if isinstance(swaps, dict) else []:
+            image = spec.get("image") if isinstance(spec, dict) else None
+            path = self._inside(image)
+            if path is not None and path.is_file():
+                rel = path.relative_to(self.root).as_posix()
+                if rel not in out:
+                    out.append(rel)
+        return out
+
     def snapshots(self) -> list[dict]:
         out = []
         d = self._snap_dir()
@@ -698,8 +820,12 @@ class Project:
             for name in (SPRITE_NAME, "palette.json", *DOCS.values()):
                 if (self.root / name).is_file():
                     shutil.copyfile(self.root / name, target / name)
+            images = self._cited_images()
+            for rel in images:
+                (target / "images" / rel).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(self.root / rel, target / "images" / rel)
             meta = {"id": target.name, "label": str(label or target.name), "author": "app",
-                    "at": int(time.time() * 1000),
+                    "at": int(time.time() * 1000), "images": images,
                     "empty": not any((target / n).is_file() for n in (SPRITE_NAME, *DOCS.values()))}
             write_json(target / "meta.json", meta)
             return meta
@@ -714,6 +840,19 @@ class Project:
                     shutil.copyfile(target / name, self.root / name)
                 elif (self.root / name).is_file():       # absent from the version: absent after the restore
                     (self.root / name).unlink()
+            try:
+                images = read_json(target / "meta.json").get("images", [])
+            except AnimaiError:
+                images = []
+            for rel in images if isinstance(images, list) else []:
+                dest = self._inside(rel)
+                if dest is not None and (target / "images" / rel).is_file():
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(target / "images" / rel, dest)
+            try:                                         # a version taken before images were copied
+                self._recall_images(self.read_doc("rig")["data"])
+            except ProjectError:
+                pass
             events = [{"type": "project.changed"}]
             for doc in DOCS:
                 rev = self._disk_rev(doc)

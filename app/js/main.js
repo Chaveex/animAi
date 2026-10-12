@@ -8,6 +8,7 @@ import { moveJoint, editBoneKey, boneKey, setTool, toggleVisibility, hint, captu
 import { initChrome, toggleTheme, toggleHelp, closePopovers, BACKGROUNDS } from './ui/chrome.js';
 import { initHierarchy } from './ui/hierarchy.js';
 import { initInspector } from './ui/inspector.js';
+import { initSwaps } from './ui/swaps.js';
 import { initQa, clearQaFocus } from './ui/qa.js';
 import { initTimeline, togglePlay, stepFrame, gotoFrame } from './ui/timeline.js';
 import './preview.js';
@@ -144,6 +145,7 @@ function boot() {
   initChrome();
   initHierarchy();
   initInspector();
+  initSwaps();
   initQa();
   initTimeline();
   viewport.initViewport($('#canvas'));

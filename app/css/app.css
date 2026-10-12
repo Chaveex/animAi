@@ -177,6 +177,20 @@ input[type="range"] { width: 72px; accent-color: var(--accent); }
 .field-value { overflow-wrap: anywhere; }
 label.scrub { cursor: ew-resize; user-select: none; touch-action: none; }
 
+/* --- Pièces de remplacement ---------------------------------------------------- */
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin: var(--sp-3) var(--sp-3) 0; }
+.section > .note { margin: var(--sp-2) var(--sp-3) 0; }
+.swap { margin: var(--sp-2) var(--sp-3) 0; border: 1px solid var(--border); border-radius: var(--radius); }
+.swap > summary { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--ctl-h); padding: 0 var(--sp-2); cursor: default; user-select: none; }
+.swap > summary:hover { background: var(--bg-hover); }
+.swap[open] > summary { border-bottom: 1px solid var(--border); font-weight: 600; }
+.swap-body { display: grid; gap: var(--sp-2); padding: var(--sp-2); }
+.swap-view { max-height: 240px; overflow: auto; justify-self: start; max-width: 100%; border: 1px solid var(--border-strong); background: repeating-conic-gradient(var(--vp-checker-a) 0% 25%, var(--vp-checker-b) 0% 50%) 0 0 / 16px 16px; }
+.swap-canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+.swap-size { font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.swap-hides { align-items: start; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+
 /* --- Hiérarchie ---------------------------------------------------------------- */
 .tree { flex: 1; overflow: auto; padding-bottom: var(--sp-2); }
 .tree-row {

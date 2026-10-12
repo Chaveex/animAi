@@ -71,4 +71,5 @@ export const SHORTCUTS = [
   { group: 'Hiérarchie', keys: 'F2 / Suppr', label: 'Renommer / supprimer le pivot (os) qui a le focus' },
   { group: 'Timeline', keys: '← →', label: 'Frame précédente / suivante quand la bande de frames a le focus' },
   { group: 'Inspecteur', keys: 'Glisser sur un libellé', label: 'Faire varier la valeur ; ↑ ↓ dans le champ = ±1 pas' },
+  { group: 'Remplacements', keys: '← ↑ → ↓', label: 'Déplacer l\'ancre quand l\'image du remplacement a le focus (1 px ; Maj = 5 px)' },
 ];

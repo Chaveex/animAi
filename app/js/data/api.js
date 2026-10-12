@@ -17,6 +17,9 @@
 //    importImage({ name, width, height, data, file }) -> void  (lance `prepare` + template ; `file` = fichier d'origine)
 //    putRig(data, baseRev)           -> { rev }                 | ConflictError | ApiError 422
 //    putLabelMap({ parts, labels }, baseRev) -> { rev, regions } (le CŒUR ré-encode les régions)
+//    putSwapImage(name, file)        -> { image, width, height, pixels: { width, height, data } } | ApiError 422
+//         range l'image d'un remplacement dans le projet (jamais d'écrasement) ; `image` = chemin à écrire dans rig.swaps
+//    getSwapImage(name, image)       -> { width, height, data }   (image d'un remplacement déclaré dans rig.json)
 //    putAnim(data, baseRev)          -> { rev }
 //    deleteAnim(baseRev)             -> { rev: null }
 //    applyPreset(name, baseRev)      -> { rev, data, warnings }
@@ -32,7 +35,7 @@
 //    subscribe(fn)                   -> unsubscribe ; author = 'app' (écrit par l'API) | 'external' ;
 //                                       fn({ type: 'rig.changed' | 'anim.changed' |
 //                                       'project.changed' | 'connection.lost' | 'connection.open', rev, author, at })
-//    capabilities = { export: boolean }
+//    capabilities = { export: boolean, swaps: boolean }
 //    demo = null | { loadExample(), externalEdit({ silent }) }   (démo uniquement)
 // ============================================================================
 

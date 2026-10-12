@@ -92,7 +92,7 @@ export function createHttpBackend(base) {
 
   return {
     kind: 'http',
-    capabilities: { export: true },
+    capabilities: { export: true, swaps: true },
     demo: null,
 
     async getProject() {
@@ -141,6 +141,19 @@ export function createHttpBackend(base) {
     putRig: (data, baseRev) => call('PUT', '/rig', { base_rev: baseRev, data }),
 
     putLabelMap: ({ parts, labels }, baseRev) => call('PUT', '/labelmap', { base_rev: baseRev, parts, runs: labelsToRuns(labels) }),
+
+    /** Le cœur contrôle l'image (palette du sprite, alpha binaire) et la range dans `swaps/` sans rien écraser. */
+    async putSwapImage(name, file) {
+      const form = new FormData();
+      form.append('file', file, file.name || name + '.png');
+      const r = await call('POST', `/swaps/${encodeURIComponent(name)}/image`, form);
+      return { ...r, pixels: await decodePng(file) };
+    },
+
+    async getSwapImage(name, image = '') {
+      const png = await call('GET', `/swaps/${encodeURIComponent(name)}.png?image=${encodeURIComponent(image)}`, null, true);
+      return decodePng(await png.blob());
+    },
 
     putAnim: (data, baseRev) => call('PUT', '/anim', { base_rev: baseRev, data }),
 
