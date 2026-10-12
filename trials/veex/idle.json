@@ -1,0 +1,6 @@
+{"version": 1, "name": "idle", "loop": true, "fps": 10, "frames": [
+  {"duration_ms": 300, "bones": {}},
+  {"duration_ms": 200, "bones": {"spine": {"pos": [0, 1]}}},
+  {"duration_ms": 300, "bones": {"spine": {"pos": [0, 1]}, "arm_r": {"pos": [0, 1]}, "arm_l": {"pos": [0, 1]}}},
+  {"duration_ms": 200, "bones": {"spine": {"pos": [0, 1]}}}
+]}

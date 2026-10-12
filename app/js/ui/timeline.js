@@ -2,7 +2,7 @@
 
 import { h, $, mount, icon } from '../dom.js';
 import { state, on, emit, exec, setCmd, setFrame, setStep, setLayer, frameCount, totalDuration, isAnimStep, retime } from '../store.js';
-import { hint, newAnimation, captureFrame, deleteFrame } from '../edits.js';
+import { hint, newAnimation, captureFrame, deleteFrame, toggleSwap } from '../edits.js';
 
 let timer = 0;
 
@@ -51,6 +51,8 @@ export function gotoFrame(i) {
 }
 
 const hasKey = (f, bone) => !!(f.bones && f.bones[bone]);
+const retouches = (f) => (f.paint ? f.paint.length : 0);
+const swapOn = (name) => ((state.anim.frames[state.frame] || {}).swap || []).includes(name);
 
 function num(fid, label, value, { min, max, unit, title, onchange }) {
   const input = h('input', {
@@ -95,6 +97,13 @@ function render() {
     }),
     h('button', { class: 'btn', 'data-fid': 'tl-capture', title: 'Capturer la pose (K) : garde cette frame et ouvre, juste après, une copie à modifier', onclick: captureFrame }, '+ Capturer la pose'),
     h('button', { class: 'btn', 'data-fid': 'tl-delete', disabled: n < 2, title: 'Supprimer la frame courante (annulable)', onclick: deleteFrame }, 'Supprimer la frame'),
+    // pièces de remplacement (rig.json « swaps ») : une image dessinée à la place de pièces, pour cette frame
+    Object.keys(state.rig.swaps || {}).length > 0 && h('span', { class: 'bar-field', role: 'group', 'aria-label': 'Pièces de remplacement de la frame' }, 'Remplacement',
+      Object.keys(state.rig.swaps).map((name) => h('button', {
+        class: 'chip', 'data-fid': 'swap:' + name, 'data-swap': name, 'aria-pressed': String(swapOn(name)),
+        title: `Dans cette frame, dessiner l'image « ${state.rig.swaps[name].image} » à la place des pièces qu'elle remplace`,
+        onclick: () => toggleSwap(name),
+      }, name))),
     h('span', { class: 'spacer' }),
     h('span', { class: 'tl-render', id: 'tl-render', role: 'status' }),
     num('frames', 'Frames', n, { min: 1, max: 64, title: '4 à 8 recommandé en pixel art. Garde la durée totale ; les frames deviennent de même durée.', onchange: (v) => retime({ frames: v }) }),
@@ -103,12 +112,13 @@ function render() {
 
   const strip = h('div', { class: 'tl-strip', id: 'tl-strip', role: 'group', 'aria-label': `Frames de l'animation ${state.anim.name || ''}` },
     state.anim.frames.map((f, i) => h('button', {
-      class: 'tl-frame' + (bone && hasKey(f, bone) ? ' keyed' : ''), 'data-fid': 'frame:' + i, 'data-frame': i,
+      class: 'tl-frame' + (bone && hasKey(f, bone) ? ' keyed' : '') + (retouches(f) ? ' retouched' : ''), 'data-fid': 'frame:' + i, 'data-frame': i,
+      title: retouches(f) ? `${retouches(f)} pixel(s) retouché(s) à la main` : null,
       'aria-current': i === state.frame ? 'true' : null, tabindex: i === state.frame ? '0' : '-1',
-      'aria-label': `Frame ${i + 1}, ${f.duration_ms} millisecondes${bone && hasKey(f, bone) ? `, clé sur ${bone}` : ''}`,
+      'aria-label': `Frame ${i + 1}, ${f.duration_ms} millisecondes${bone && hasKey(f, bone) ? `, clé sur ${bone}` : ''}${retouches(f) ? `, ${retouches(f)} pixels retouchés` : ''}`,
       style: { flexGrow: String(f.duration_ms) },
       onclick: () => gotoFrame(i),
-    }, h('span', { class: 'tl-num' }, i + 1), h('span', { class: 'tl-ms' }, f.duration_ms + ' ms'), h('span', { class: 'tl-key', 'aria-hidden': 'true' }))));
+    }, h('span', { class: 'tl-num' }, i + 1), h('span', { class: 'tl-ms' }, f.duration_ms + ' ms'), h('span', { class: 'tl-key', 'aria-hidden': 'true' }), h('span', { class: 'tl-paint', 'aria-hidden': 'true' }))));
   strip.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const d = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
@@ -135,6 +145,7 @@ function light() {
     b.tabIndex = i === state.frame ? 0 : -1;
   });
   $('#tl-counter').textContent = `${state.frame + 1} / ${frameCount()}`;
+  document.querySelectorAll('#timeline [data-swap]').forEach((b) => b.setAttribute('aria-pressed', String(swapOn(b.dataset.swap))));
   const ms = $('#t-frame-ms');
   if (ms && document.activeElement !== ms) ms.value = state.anim.frames[state.frame].duration_ms;
 }
@@ -148,7 +159,7 @@ function renderProgress() {
 }
 
 export function initTimeline() {
-  on('status project anim selection', render);
+  on('status project anim rig selection', render);
   let key = '';
   on('view', () => {
     const k = `${state.playing}:${state.layers.onion}`;

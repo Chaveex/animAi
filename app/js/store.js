@@ -50,12 +50,14 @@ export const state = {
   reportError: null,
 
   step: 'rig', // prepare | rig | animate | export
-  tool: 'select', // select | brush | eraser | joint
+  tool: 'select', // select | brush | eraser | joint | retouch
   brushSize: 1,
   selection: null, // { kind: 'bone' | 'part', id }
   layers: { skeleton: true, labelmap: false, pivots: true, grid: false, onion: false },
   labelOpacity: 0.6,
   unassignedColor: storedUnassignedColor(), // cadre des pixels non assignés, #RRGGBB
+  retouchColor: null, // couleur du pinceau de retouche : toujours une couleur de la palette
+  retouchMode: 'paint', // paint | erase (rendre transparent) | restore (retirer la retouche)
   background: 'checker', // checker | grey | black | white
   hiddenParts: new Set(),
   hiddenBones: new Set(),
@@ -79,6 +81,13 @@ export function targetPart() {
   if (s.kind === 'part') return s.id;
   const parts = partsOfBone(s.id);
   return parts.length === 1 ? parts[0] : null;
+}
+
+/** Couleur du pinceau de retouche : le choix de l'utilisateur s'il est dans la palette, sinon la première couleur. */
+export function retouchColor() {
+  const c = (state.retouchColor || '').toLowerCase();
+  const pal = state.palette.map((p) => p.toLowerCase());
+  return pal.includes(c) ? c : pal[0] || null;
 }
 
 export function unassignedCount() {
@@ -130,6 +139,7 @@ export function setStep(step) {
   state.step = step;
   if (!isAnimStep() && state.playing) state.playing = false;
   if (step === 'prepare' || (step !== 'rig' && (state.tool === 'brush' || state.tool === 'eraser'))) state.tool = 'select';
+  if (step !== 'animate' && state.tool === 'retouch') state.tool = 'select';
   emit('view');
 }
 

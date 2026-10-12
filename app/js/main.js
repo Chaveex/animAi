@@ -68,7 +68,7 @@ const ACTIONS = {
   step1: step('prepare'), step2: step('rig'), step3: step('animate'), step4: step('export'),
   zoneNext: () => focusZone(1), zonePrev: () => focusZone(-1),
   theme: toggleTheme,
-  toolSelect: () => setTool('select'), toolBrush: () => setTool('brush'), toolEraser: () => setTool('eraser'), toolJoint: () => setTool('joint'),
+  toolSelect: () => setTool('select'), toolBrush: () => setTool('brush'), toolEraser: () => setTool('eraser'), toolJoint: () => setTool('joint'), toolRetouch: () => setTool('retouch'),
   visibility: () => (state.selection ? toggleVisibility() : hint('Rien de sélectionné à masquer.')),
   left: (e) => nudge(-1, 0, e), right: (e) => nudge(1, 0, e), up: (e) => nudge(0, -1, e), down: (e) => nudge(0, 1, e),
   apply: () => viewport.applyAtCursor() || hint('Déplacez d\'abord le curseur pixel avec les flèches.'),

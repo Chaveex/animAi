@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "outputs": {
+    "spritesheet": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\export\\idle\\idle.png",
+    "json": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\export\\idle\\idle.json",
+    "gif": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\export\\idle\\idle.gif",
+    "format": "spritesheet",
+    "frame_count": 4,
+    "frame_size": [
+      74,
+      116
+    ],
+    "sheet_size": [
+      296,
+      116
+    ],
+    "pivot": [
+      37,
+      114
+    ],
+    "duration_ms": 1000,
+    "mirror": false
+  },
+  "warnings": [],
+  "error": null
+}

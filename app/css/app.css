@@ -214,10 +214,12 @@ label.scrub { cursor: ew-resize; user-select: none; touch-action: none; }
 .bar-field input, .bar-field select { color: var(--text); }
 .color-wrap { position: relative; }
 .color-wrap .chip { gap: 6px; color: var(--text); }
-.color-popover { left: 0; right: auto; width: auto; color: var(--text); }
+.color-popover { left: 0; right: auto; width: max-content; color: var(--text); }
 .swatches { display: grid; grid-template-columns: repeat(4, 28px); gap: var(--sp-1); }
 .swatch { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius); }
 .swatch[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 1px; }
+.palette-swatches { grid-template-columns: repeat(8, 28px); max-height: 232px; overflow-y: auto; padding: 3px; }
+.popover-note { max-width: 252px; margin: var(--sp-1) 0 0; font-size: var(--fs-xs); }
 .color-custom { display: flex; align-items: center; gap: var(--sp-2); }
 .color-custom input { width: 28px; height: 22px; padding: 0; border: 0; background: none; }
 .zoom { min-width: 36px; text-align: center; }
@@ -275,6 +277,8 @@ button.qa-row:hover, .history-row:hover { background: var(--bg-hover); }
 .tl-key { display: none; width: 7px; height: 7px; background: var(--text); transform: rotate(45deg); }
 .tl-frame.keyed .tl-key { display: block; position: absolute; top: 3px; right: 4px; }
 .tl-key.demo { display: inline-block; margin-right: 2px; }
+.tl-paint { display: none; width: 7px; height: 7px; background: var(--accent); border: 1px solid var(--text); }
+.tl-frame.retouched .tl-paint { display: block; position: absolute; top: 3px; left: 4px; }
 .tl-legend { font-size: var(--fs-xs); }
 .tl-empty { display: flex; align-items: center; gap: var(--sp-1); }
 

@@ -273,9 +273,30 @@ def _mirror(result: render.RenderResult, manifest: dict, sprite_width: int) -> N
             pose["angle"] = 180 if pose["angle"] in (180, -180) else -pose["angle"]
 
 
+def swap_paths(rig: dict, base: str | Path) -> dict[str, Path]:
+    """File of each replacement image of ``rig["swaps"]``, relative to the folder of rig.json."""
+    out = {}
+    for name, spec in rig.get("swaps", {}).items():
+        path = Path(spec["image"])
+        out[name] = path if path.is_absolute() else Path(base) / path
+    return out
+
+
+def load_swaps(rig: dict, base: str | Path) -> dict[str, np.ndarray]:
+    """Read the replacement images of a rig (RGBA arrays). A missing or unreadable file is an error."""
+    images = {}
+    for name, path in swap_paths(rig, base).items():
+        try:
+            images[name] = normalize_rgba(load_rgba(path))
+        except AnimaiError as exc:
+            raise AnimaiError(f"swap '{name}': {exc}") from None
+    return images
+
+
 def render_project(rig: dict, rgba: np.ndarray, anim: dict, source_indices: list[int] | None = None, *,
                    rotation: str = "rotsprite", padding: int = 2, mirror: bool = False,
-                   use_rest_offsets: bool | None = None) -> Rendered:
+                   use_rest_offsets: bool | None = None,
+                   swap_images: dict[str, np.ndarray] | None = None) -> Rendered:
     """Render a (retargeted, resampled) animation and build its ``frames.json`` manifest.
 
     Single code path for the CLI (``run_animate``) and the server: same frames,
@@ -292,7 +313,7 @@ def render_project(rig: dict, rgba: np.ndarray, anim: dict, source_indices: list
     offsets = rest_offsets(rig) if use_rest_offsets else {}
     fill_radii = qa.joint_radii(rig, parts, rgba.shape[:2]) if rig.get("fill_holes", True) else None
     result = render.render_animation(rgba, rig, parts, anim, method=rotation, padding=padding, outline=outline,
-                                     offsets=offsets, fill_radii=fill_radii)
+                                     offsets=offsets, fill_radii=fill_radii, swap_images=swap_images)
     warnings += result.warnings
     if source_indices is None:
         source_indices = list(range(len(anim["frames"])))
@@ -307,6 +328,12 @@ def render_project(rig: dict, rgba: np.ndarray, anim: dict, source_indices: list
             entry["z"] = anim["frames"][i]["z"]
         if anim["frames"][i].get("label"):
             entry["label"] = anim["frames"][i]["label"]
+        if result.paint[i]:
+            entry["retouched"] = len(result.paint[i])
+        active, _, gone = render.frame_swaps(rig, anim["frames"][i])
+        if active:
+            entry["swap"] = active
+            entry["hidden_bones"] = sorted(gone)
         meta.append(entry)
     manifest = {
         "version": 1,
@@ -368,7 +395,8 @@ def run_animate(rig_path: str | Path, *, preset: str | None = None, keyframes: s
     warnings += w
 
     rendered = render_project(rig, rgba, anim, source_indices, rotation=rotation, padding=padding,
-                              mirror=mirror, use_rest_offsets=use_rest_offsets)
+                              mirror=mirror, use_rest_offsets=use_rest_offsets,
+                              swap_images=load_swaps(rig, rig_file.parent))
     warnings += rendered.warnings
     result, manifest, durations = rendered.result, rendered.manifest, rendered.durations
 

@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "outputs": {
+    "report": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\idle\\report.json",
+    "checks": 8,
+    "failed": [],
+    "metrics": {
+      "unmonitored_joints": [
+        "forearm_r",
+        "hand_r"
+      ],
+      "outline": null,
+      "frames": [
+        {
+          "border": 430,
+          "outline_bare": null,
+          "ground_offset": 0,
+          "pinholes": []
+        },
+        {
+          "border": 428,
+          "outline_bare": null,
+          "ground_offset": 0,
+          "pinholes": []
+        },
+        {
+          "border": 427,
+          "outline_bare": null,
+          "ground_offset": 0,
+          "pinholes": []
+        },
+        {
+          "border": 428,
+          "outline_bare": null,
+          "ground_offset": 0,
+          "pinholes": []
+        }
+      ]
+    }
+  },
+  "warnings": [],
+  "error": null
+}

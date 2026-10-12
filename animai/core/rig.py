@@ -57,7 +57,8 @@ def _check_shapes(where: str, region: dict) -> None:
 
 
 RIG_KEYS = {"version", "sprite", "view", "template", "pivot", "bones", "parts", "ik", "outline", "outline_mode",
-            "rest_offsets", "fill_holes"}
+            "rest_offsets", "fill_holes", "swaps"}
+SWAP_KEYS = {"image", "bone", "anchor", "z", "hides"}
 BONE_KEYS = {"parent", "joint", "rest_offset"}
 # Limb roots that "rest_offsets": "auto" brings onto the axis of their near twin.
 REST_OFFSET_PAIRS = (("thigh_l", "thigh_r"), ("arm_l", "arm_r"))
@@ -126,6 +127,31 @@ def validate_rig(rig: dict) -> list[str]:
             raise AnimaiError(f"bone '{name}': rest_offset must be [dx, dy] integers")
     if not isinstance(rig.get("fill_holes", True), bool):
         raise AnimaiError("rig.fill_holes must be true or false")
+    swaps = rig.get("swaps", {})
+    if not isinstance(swaps, dict):
+        raise AnimaiError("rig.swaps must be an object")
+    for name, swap in swaps.items():
+        where = f"swap '{name}'"
+        if not isinstance(swap, dict):
+            raise AnimaiError(f"{where} must be an object")
+        warnings += unknown_keys(swap, SWAP_KEYS, where)
+        if not (isinstance(swap.get("image"), str) and swap["image"]):
+            raise AnimaiError(f"{where}: image must be the path of a PNG file")
+        if swap.get("bone") not in bones:
+            raise AnimaiError(f"{where}: unknown bone '{swap.get('bone')}'")
+        if not _int_pair(swap.get("anchor")):
+            raise AnimaiError(f"{where}: anchor must be [x, y] integers (the pixel of the image placed on the joint)")
+        if "z" in swap and not (isinstance(swap["z"], int) and not isinstance(swap["z"], bool)):
+            raise AnimaiError(f"{where}: z must be an integer")
+        hides = swap.get("hides", [])
+        if not (isinstance(hides, list) and all(isinstance(h, str) for h in hides)):
+            raise AnimaiError(f"{where}: hides must be a list of part names")
+        parts_map = rig.get("parts") if isinstance(rig.get("parts"), dict) else {}
+        for part in hides:
+            if part not in parts_map:
+                raise AnimaiError(f"{where}: hides unknown part '{part}'")
+        if not swap_hides(rig, name):
+            raise AnimaiError(f"{where}: nothing to replace (bone '{swap['bone']}' has no part, and hides is empty)")
     if rig.get("rest_offsets", "none") not in ("none", "auto"):
         raise AnimaiError("rig.rest_offsets must be \"none\" or \"auto\"")
     if rig.get("template", "humanoid") == "humanoid" and "hips" not in bones:
@@ -208,6 +234,16 @@ def normalize_rig(rig: dict) -> tuple[dict, list[str]]:
                     bone = {**bone, "parent": ancestor}
         new_bones[name] = bone
     return {**rig, "bones": new_bones}, warnings
+
+
+def swap_hides(rig: dict, name: str) -> list[str]:
+    """Parts a swap replaces: its ``hides`` list, or every part of its bone when the list is absent or empty."""
+    swap = rig["swaps"][name]
+    hides = list(swap.get("hides") or [])
+    if not hides:
+        parts = rig.get("parts") if isinstance(rig.get("parts"), dict) else {}
+        hides = [n for n, p in parts.items() if isinstance(p, dict) and p.get("bone") == swap.get("bone")]
+    return hides
 
 
 def load_rig(path: str | Path) -> tuple[dict, list[str]]:

@@ -60,6 +60,7 @@ pixels de la pièce = arrondi(joint_monde(B)) + R(angle_monde(B)) · (pixel - jB
 
 - `outline` (`"auto"` par défaut, `"none"` ou `false`, ou `"#RRGGBB"`) et `outline_mode` (`"outside"` par défaut, ou `"inside"`) : voir « Passe de contour ».
 - `fill_holes` (booléen, défaut `true`) : bouchage automatique des trous au rendu, voir « Bouchage des trous ». Autre valeur qu'un booléen = erreur.
+- `swaps` (optionnel) : images de remplacement dessinées à la main, voir « Pièces de remplacement ».
 - **`region` est obligatoire** dans chaque pièce et doit être un objet ; `{}` désigne une pièce sans pixel pour l'instant. Une pièce sans `region` est une erreur.
 - **Clés inconnues** : toute clé que ce format ne définit pas (dans le rig, un os, une pièce, une région, `exclude`, une entrée `ik`) donne un avertissement `unknown key '<clé>' in <emplacement>: ignored`. Les clés commençant par `_` sont des commentaires, acceptées en silence.
 
@@ -136,6 +137,27 @@ Un avertissement donne le compte par frame : `holes filled automatically ("fill_
 
 Limites : c'est un aplat copié, pas un dessin (ni ombrage ni motif) ; un vide fermé de plus de 4 px hors d'un disque d'articulation n'est pas bouché ; un trou sans aucun pixel opaque autour reste vide ; une articulation déboîtée (cause 3 de `holes`) n'est pas corrigée ; les déformations dues à la rotation ne sont pas concernées.
 
+### Pièces de remplacement (`swaps`)
+
+Une pose où la forme change (bras plié qui se tend, main qui s'ouvre) ne s'obtient pas en tournant des pièces : on la **dessine**, et on la branche sur les frames qui en ont besoin.
+
+```json
+"swaps": {
+  "arm_l_jab": {"image": "swaps/arm_l_jab.png", "bone": "arm_l", "anchor": [4, 6],
+                "hides": ["arm_l", "forearm_l", "hand_l"], "z": -6}
+}
+```
+
+- `image` : PNG, chemin relatif au dossier de `rig.json` (ou absolu). Alpha strictement 0/255 et **uniquement des couleurs de la palette du sprite**, sinon erreur (`swap 'arm_l_jab': 3 colour(s) not in the sprite palette (#ff00ff, ...)`). Fichier absent ou illisible = erreur.
+- `bone` : l'os qui porte l'image. `anchor` : `[x, y]`, le pixel de l'image posé sur le joint de cet os. L'image est dessinée pour un os à 0° ; elle tourne et se déplace ensuite avec lui, comme une pièce rigide (mêmes règles de rotation).
+- `hides` : pièces non dessinées quand le remplacement est actif. Absent ou vide = toutes les pièces de `bone`. Pièce inconnue = erreur ; rien à remplacer = erreur.
+- `z` (optionnel) : z de l'image. Défaut : le `z` de la première pièce remplacée. Un override `z` de la frame sur `bone` s'applique aussi.
+- Un remplacement n'agit que dans les frames qui le citent : `"swap": ["arm_l_jab"]` (voir `anim.json`). Les autres frames et la pose de repos ne changent pas.
+- L'image appartient, pour l'éditeur et la passe de contour, à la première pièce remplacée.
+- Les articulations des os dont toutes les pièces sont remplacées ne sont ni bouchées ni contrôlées dans ces frames (`frames[].hidden_bones` de `frames.json`).
+
+Limites : l'image est un bloc rigide (pas de coude dedans) ; elle n'a pas de zone cachée calculée ; les versions nommées du serveur (`/api/snapshots`) ne copient pas les images.
+
 ### IK deux os (optionnel)
 
 `ik.<nom>` = `{"chain": [os1, os2], "target_bone": os3, "bend": -1 | 1}` avec la hiérarchie `os1 > os2 > os3` obligatoire.
@@ -174,8 +196,26 @@ Parents canoniques : `spine` > `hips` ; `head`, `arm_*` > `spine` ; `forearm_*` 
 - `key` (optionnel, par frame) : marque une **pose clé** que le rééchantillonnage doit garder. `true` = priorité 1, un nombre >= 0 = cette priorité (plus grand = gardé en premier), absent ou `false` = 0. `label` (optionnel) : libellé libre (`"contact"`, `"impact"`…), recopié dans `frames.json` et cité dans les avertissements.
 - **Clés inconnues** : toute clé non définie ici (dans l'animation, une frame, la pose d'un os, une cible `ik`) donne un avertissement `unknown key '<clé>' in <emplacement>: ignored` ; par exemple `"rotation": 30` à la place de `rot`. Les clés commençant par `_` sont des commentaires.
 - `rest_offsets` (booléen, défaut `false`) : demande l'application des décalages de repos du rig pendant cette animation (voir « Décalage de repos »). À mettre dans un walk ou un run, pas dans un idle.
+- `paint` (optionnel, par frame) : **retouches à la main**, voir « Retouches par frame ».
+- `swap` (optionnel, par frame) : liste de noms de `rig.swaps` actifs dans cette frame, voir « Pièces de remplacement ». Nom absent du rig : ignoré avec avertissement.
 - `name` absent = nom du fichier. `loop` absent = `true`.
 - Durée totale = somme des `duration_ms`.
+
+### Retouches par frame (`paint`)
+
+```json
+{"duration_ms": 100, "bones": {"arm_r": {"rot": 45}},
+ "paint": [[31, 22, "#663931"], [32, 22, "#663931"], [30, 25, null]]}
+```
+
+- Chaque entrée est `[x, y, "#RRGGBB"]` (peindre le pixel) ou `[x, y, null]` (le rendre transparent). `x`, `y` entiers, en coordonnées **sprite** (celles des joints) ; ils peuvent sortir du sprite. Pour un même pixel, la dernière entrée gagne.
+- La couleur doit être **dans la palette du sprite**, sinon erreur (`frame 2: paint colour #ff00ff at [31, 22] is not in the sprite palette`). Casse libre. Entrée mal formée = erreur.
+- Les retouches sont écrites **en dernier**, après la composition, le bouchage des trous et la passe de contour : rien ne les modifie. Elles ne valent que pour leur frame.
+- Elles ne suivent pas les os : si la pose de la frame change, elles restent où elles sont.
+- **Canvas** : un pixel peint entre dans la bbox de l'animation, le canvas grandit pour le contenir (pivot inchangé en coordonnées sprite). Un pixel effacé ne l'agrandit pas.
+- **Rééchantillonnage** : une frame répétée ou gardée emporte ses retouches. **Miroir** : appliqué après, les retouches sont retournées avec l'image.
+- `frames.json` : `frames[].retouched` = nombre de pixels retouchés, présent seulement s'il y en a.
+- La QA contrôle la frame retouchée comme les autres : un pixel effacé peut ouvrir un trou, un pixel peint à l'écart est un orphelin.
 
 ### Rééchantillonnage (`--duration` / `--frames` / `--fps`)
 
@@ -256,7 +296,7 @@ Exemple pour les presets : `{"duration_ms": 50, "key": 2, "label": "strike", "bo
 ```
 
 - `canvas` = `[w, h]` ; `origin` = coordonnées sprite du coin haut gauche du canvas ; `pivot` en coordonnées canvas.
-- `frames[].bones` = pose **monde** : `angle` (degrés, anti-horaire, dans `]-180, 180]`) et `joint` arrondi, en coordonnées **sprite** (ajouter `-origin` pour le canvas). `source_frame` = index de la frame source avant rééchantillonnage. `z` présent seulement s'il y a un override.
+- `frames[].bones` = pose **monde** : `angle` (degrés, anti-horaire, dans `]-180, 180]`) et `joint` arrondi, en coordonnées **sprite** (ajouter `-origin` pour le canvas). `source_frame` = index de la frame source avant rééchantillonnage. `z` présent seulement s'il y a un override. `retouched` = nombre de pixels retouchés à la main (`paint`), présent seulement s'il y en a. `swap` = remplacements actifs et `hidden_bones` = os entièrement remplacés, présents seulement s'il y a un remplacement.
 - `mirror` (booléen) et `outline` (`null`, ou `{color, mode, inner_parts, source_bare, source_border}` : réglage de contour appliqué, et nombre de pixels de bord du sprite sans contour / au total) sont toujours présents. `frames[].label` reprend le libellé de la frame source quand il existe.
 - `source` = mesures faites sur le sprite, qui servent de référence à `validate`.
 - `rest.bones` = le squelette au repos (après rattachement des parents absents), en coordonnées sprite.
@@ -528,6 +568,12 @@ Vague 3 (lead dev) : écarts avec le contrat, décalage de repos.
 35. `GET /api/report` juste après un import porte `warnings_coded`.
 36. Erreur de `rig.outline` invalide : le message nomme la clé. Contrat précisé : l'avertissement « changes the holds » est émis aussi sur la meilleure répartition possible (walk de 8 à 12 frames) ; le comportement ne change pas.
 37. Décalage de repos : `bones.<os>.rest_offset`, `rig.rest_offsets: "auto"`, `anim.rest_offsets`, `animate --rest-offsets on|off`, `rest_offsets` dans `frames.json` et dans la formule de la cause 3 de `holes`. Désactivé par défaut : aucun rendu existant ne change.
+
+Éditeur, retouches (session principale) : bouchage des trous, retouches par frame.
+
+38. `rig.fill_holes` (défaut `true`) ; section « Bouchage des trous ». Le rendu change de quelques pixels sur les poses qui ouvraient un trou.
+39. `anim.json` : `paint` par frame ; section « Retouches par frame ». `frames.json` : `frames[].retouched`.
+40. `rig.swaps` et `anim.json` `swap` par frame ; section « Pièces de remplacement ». `frames.json` : `frames[].swap`, `frames[].hidden_bones`.
 
 ## Grands fichiers et grille non entière (`prepare`)
 

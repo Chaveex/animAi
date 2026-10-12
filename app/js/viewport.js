@@ -1,10 +1,10 @@
 // Viewport : rendu canvas net (zoom ENTIER en pixels physiques, lissage désactivé),
 // pan / zoom, calques d'affichage et outils d'édition à la souris et au clavier.
 
-import { state, on, emit, exec, paintCmd, setSelection, targetPart, isAnimStep, frameCount, layerActive, toast, undo, beginGesture, endGesture } from './store.js';
-import { getFrame, silhouette } from './preview.js';
+import { state, on, emit, exec, paintCmd, setSelection, setView, targetPart, isAnimStep, frameCount, layerActive, toast, undo, beginGesture, endGesture, retouchColor } from './store.js';
+import { getFrame, silhouette, paintedCanvas } from './preview.js';
 import { labelStyle, labelPixel } from './label-palette.js';
-import { moveJoint, editBoneKey, boneKey, hint, addBone } from './edits.js';
+import { moveJoint, editBoneKey, boneKey, hint, addBone, applyRetouch } from './edits.js';
 
 export const ZOOMS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 48, 64];
 const ONION_PREV = '#0072B2'; // bleu  : frame précédente
@@ -105,7 +105,8 @@ function rebuildLabels() {
 function frameLabelLayers(entry) {
   if (!entry.owners) return null;
   if (!entry.labelLayers) {
-    entry.labelLayers = buildLabelLayers(entry.width, entry.height, (i) => entry.owners[i], (i) => entry.data[i * 4 + 3] !== 0);
+    // un pixel retouché à la main n'est ni une pièce ni un pixel « non assigné »
+    entry.labelLayers = buildLabelLayers(entry.width, entry.height, (i) => entry.owners[i], (i) => entry.data[i * 4 + 3] !== 0 && !entry.retouched.has(i));
   }
   return entry.labelLayers;
 }
@@ -360,6 +361,8 @@ export function applyAtCursor() {
   if (state.tool === 'brush' || state.tool === 'eraser') {
     if (!beginStroke(pos)) return true;
     endStroke();
+  } else if (state.tool === 'retouch') {
+    if (beginRetouch(pos)) endRetouch();
   } else pick(pos);
   return true;
 }
@@ -403,16 +406,63 @@ function strokeTo(x, y) {
   let { x: x0, y: y0 } = drag.last;
   const dx = Math.abs(x - x0), dy = -Math.abs(y - y0), stepX = x0 < x ? 1 : -1, stepY = y0 < y ? 1 : -1;
   let err = dx + dy;
+  const put = drag.type === 'retouch' ? dabRetouch : dab;
   for (;;) {
-    dab(x0, y0);
+    put(x0, y0);
     if (x0 === x && y0 === y) break;
     const e2 = 2 * err;
     if (e2 >= dy) { err += dy; x0 += stepX; }
     if (e2 <= dx) { err += dx; y0 += stepY; }
   }
   drag.last = { x, y };
-  rebuildLabels();
+  if (drag.type === 'paint') rebuildLabels();
   requestDraw();
+}
+
+// Retouche (étape Animer) : le trait porte sur les pixels de la frame affichée, en coordonnées sprite.
+function dabRetouch(x, y) {
+  const sc = scene(), n = state.brushSize, off = Math.floor((n - 1) / 2);
+  for (let yy = y - off; yy < y - off + n; yy++) for (let xx = x - off; xx < x - off + n; xx++) {
+    if (xx + sc.ox < 0 || yy + sc.oy < 0 || xx + sc.ox >= sc.aw || yy + sc.oy >= sc.ah) continue;
+    drag.changes.set(`${xx},${yy}`, drag.value);
+  }
+}
+
+function beginRetouch(pos) {
+  if (state.step !== 'animate' || !frameCount()) {
+    hint('La retouche s\'utilise à l\'étape Animer (touche 3), sur une frame de l\'animation.');
+    return false;
+  }
+  if (!scene().entry) {
+    hint('La frame est en cours de rendu : réessayez dans un instant.');
+    return false;
+  }
+  let value = state.retouchMode === 'erase' ? null : state.retouchMode === 'restore' ? 'restore' : retouchColor();
+  if (value === undefined || (state.retouchMode === 'paint' && !value)) {
+    hint('Choisissez une couleur de la palette dans la barre du viewport.');
+    return false;
+  }
+  if (state.playing) setView({ playing: false });
+  drag = { type: 'retouch', value, changes: new Map(), last: { x: pos.x, y: pos.y } };
+  strokeTo(pos.x, pos.y);
+  return true;
+}
+
+function endRetouch() {
+  const d = drag;
+  drag = null;
+  if (d && d.changes.size) applyRetouch(d.changes);
+  requestDraw();
+}
+
+/** Retouches à dessiner sur la frame affichée : celles d'anim.json, puis le trait en cours. */
+function shownPaint() {
+  const f = state.anim && state.anim.frames[state.frame];
+  const list = [...((f && f.paint) || [])];
+  if (drag && drag.type === 'retouch') {
+    for (const [key, v] of drag.changes) if (v !== 'restore') list.push([...key.split(',').map(Number), v]);
+  }
+  return list;
 }
 
 function beginStroke(pos) {
@@ -507,6 +557,18 @@ function onDown(e) {
     } else drag = { type: 'joint', bone: b, start: [...state.rig.bones[b].joint], cur: [...state.rig.bones[b].joint] };
     beginGesture();
     canvas.setPointerCapture(e.pointerId);
+  } else if (tool === 'retouch') {
+    if (e.altKey) {
+      // pipette : la couleur affichée sous le curseur (toujours une couleur de la palette)
+      const info = pixelInfo(pos.x, pos.y);
+      if (info.inside && info.alpha) setView({ retouchColor: '#' + info.color.map((v) => v.toString(16).padStart(2, '0')).join(''), retouchMode: 'paint' });
+      else hint('Pipette : cliquez sur un pixel opaque.');
+      return;
+    }
+    if (beginRetouch(pos)) {
+      beginGesture();
+      canvas.setPointerCapture(e.pointerId);
+    }
   } else {
     if (e.altKey) {
       const info = pixelInfo(pos.x, pos.y);
@@ -533,7 +595,7 @@ function onMove(e) {
   if (state.status !== 'ready') return;
   if (kbd) kbd = null;
   setHover(pos.x, pos.y);
-  if (drag && drag.type === 'paint') strokeTo(pos.x, pos.y);
+  if (drag && (drag.type === 'paint' || drag.type === 'retouch')) strokeTo(pos.x, pos.y);
   else if (drag && drag.type === 'joint') {
     const s = state.sprite;
     const to = [Math.max(0, Math.min(s.width - 1, pos.x)), Math.max(0, Math.min(s.height - 1, pos.y))];
@@ -565,6 +627,12 @@ function onUp(e) {
   if (d.type === 'paint') {
     endStroke();
     return endGesture();
+  }
+  if (d.type === 'retouch') {
+    if (e.type === 'pointercancel') drag = null;
+    else endRetouch();
+    endGesture();
+    return requestDraw();
   }
   drag = null;
   if (d.type === 'pan') {
@@ -615,7 +683,7 @@ function onWheel(e) {
 function updateCursorStyle() {
   if (!canvas) return;
   canvas.style.cursor = spaceHeld ? (drag && drag.type === 'pan' ? 'grabbing' : 'grab')
-    : { select: 'default', brush: 'crosshair', eraser: 'crosshair', joint: 'move' }[state.tool];
+    : { select: 'default', brush: 'crosshair', eraser: 'crosshair', joint: 'move', retouch: 'crosshair' }[state.tool];
 }
 
 // --- Dessin ------------------------------------------------------------------------
@@ -691,7 +759,7 @@ function draw() {
       if (next) ctx.drawImage(silhouette(next, ONION_NEXT), ax, ay, aw, ah);
       ctx.globalAlpha = 1;
     }
-    ctx.drawImage(sc.entry.canvas, ax, ay, aw, ah);
+    ctx.drawImage(paintedCanvas(sc.entry, shownPaint()), ax, ay, aw, ah);
     layers = frameLabelLayers(sc.entry);
   } else {
     ctx.drawImage(restCanvas, panX, panY, s.width * zoom, s.height * zoom);
@@ -867,7 +935,7 @@ function draw() {
   // 9. curseurs : pinceau au survol, curseur pixel clavier, fantôme de déplacement
   const hv = state.hover;
   if (kbd) pixelBox(kbd.x, kbd.y, 1, 1, u);
-  else if (hv && hv.inside && (state.tool === 'brush' || state.tool === 'eraser') && state.step === 'rig') {
+  else if (hv && hv.inside && (((state.tool === 'brush' || state.tool === 'eraser') && state.step === 'rig') || (state.tool === 'retouch' && state.step === 'animate'))) {
     const n = state.brushSize, off = Math.floor((n - 1) / 2);
     pixelBox(hv.x - off, hv.y - off, n, n, u);
   }

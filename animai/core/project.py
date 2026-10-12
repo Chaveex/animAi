@@ -497,7 +497,7 @@ class Project:
                 raise ProjectError("rig.json est absent du projet.", 404)
             if anim_rev is None and not allow_rest:
                 raise ProjectError("Aucune animation : anim.json est absent du projet.", 404)
-            key = ("render", sprite_rev, rig_rev, anim_rev)
+            key = ("render", sprite_rev, rig_rev, anim_rev, self._swaps_rev())
             if key not in self._cache:
                 try:
                     rig, warnings = load_rig(self.path("rig"))
@@ -510,7 +510,8 @@ class Project:
                     warnings += w
                     anim, indices, w = resample(anim)
                     warnings += w
-                    out = pipeline.render_project(rig, rgba, anim, indices)
+                    out = pipeline.render_project(rig, rgba, anim, indices,
+                                                  swap_images=pipeline.load_swaps(rig, self.path("rig").parent))
                 except ProjectError:
                     raise
                 except AnimaiError as exc:
@@ -518,6 +519,21 @@ class Project:
                 out.warnings = warnings + out.warnings
                 self._put_cache(key, out)
             return self._cache[key]
+
+    def _swaps_rev(self) -> str:
+        """State of the replacement images on disk (size and date of each file): redrawing one re-renders."""
+        try:
+            rig = json.loads(self.path("rig").read_text(encoding="utf-8"))
+            specs = rig.get("swaps", {}) if isinstance(rig, dict) else {}
+            base, out = self.path("rig").parent, []
+            for name in sorted(specs) if isinstance(specs, dict) else []:
+                image = specs[name].get("image") if isinstance(specs[name], dict) else None
+                path = (base / image) if isinstance(image, str) else None
+                stat = path.stat() if path is not None and path.is_file() else None
+                out.append(f"{name}:{stat.st_size}:{stat.st_mtime_ns}" if stat else f"{name}:missing")
+            return "|".join(out)
+        except (OSError, ValueError):
+            return ""
 
     def _frame(self, index: int) -> pipeline.Rendered:
         out = self.rendered()
@@ -532,7 +548,7 @@ class Project:
             if not hide:
                 return encode_png(out.result.frames[index])
             layers = [l for l in out.result.layers[index] if l.part not in set(hide)]
-            return encode_png(render.finish_frame(out.result, layers))
+            return encode_png(render.finish_frame(out.result, layers, index))
 
     def frame_json(self, index: int, hide=()) -> dict:
         with self.lock:

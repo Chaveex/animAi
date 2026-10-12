@@ -35,6 +35,46 @@ export function editBoneKey(bone, patch, merge = false) {
   if (Object.keys(out).length) bones[bone] = out;
   else delete bones[bone];
   exec(setCmd('anim', ['frames', frame, 'bones'], bones, `Poser « ${bone} » (frame ${frame + 1})`, merge ? `key:${bone}:${frame}` : null));
+  const n = (state.anim.frames[frame].paint || []).length;
+  if (n) hint(`Cette frame porte ${n} pixel${n > 1 ? 's' : ''} de retouche : ils restent à leur place quand la pose change. Vérifiez-les, ou effacez-les (outil Retouche).`);
+}
+
+// --- Retouche par frame : pixels peints ou effacés à la main, écrits dans anim.json ---------
+
+/**
+ * Applique un trait de retouche à la frame courante. `changes` : Map « x,y » (pixels du sprite) ->
+ * '#rrggbb' (peindre), null (rendre transparent) ou 'restore' (retirer la retouche de ce pixel).
+ */
+export function applyRetouch(changes) {
+  if (!frameCount() || !changes.size) return;
+  const frame = state.frame;
+  const map = new Map((state.anim.frames[frame].paint || []).map(([x, y, c]) => [`${x},${y}`, c]));
+  for (const [key, value] of changes) {
+    if (value === 'restore') map.delete(key);
+    else map.set(key, value);
+  }
+  const list = [...map].map(([key, c]) => [...key.split(',').map(Number), c]);
+  const n = changes.size, pl = n > 1 ? 's' : '';
+  exec(setCmd('anim', ['frames', frame, 'paint'], list.length ? list : undefined, `Retouche : ${n} pixel${pl} (frame ${frame + 1})`));
+}
+
+/** Active ou retire, dans la frame courante, une pièce de remplacement définie dans rig.json (`swaps`). */
+export function toggleSwap(name) {
+  if (!frameCount()) return;
+  const frame = state.frame, cur = state.anim.frames[frame].swap || [];
+  const on = cur.includes(name);
+  const list = on ? cur.filter((n) => n !== name) : [...cur, name];
+  exec(setCmd('anim', ['frames', frame, 'swap'], list.length ? list : undefined, `${on ? 'Retirer' : 'Utiliser'} le remplacement « ${name} » (frame ${frame + 1})`));
+  const spec = (state.rig.swaps || {})[name] || {};
+  if (!on) hint(`« ${name} » remplace ${(spec.hides || []).join(', ') || 'les pièces de ' + spec.bone} dans cette frame. L'image suit l'os « ${spec.bone} ».`);
+}
+
+/** Retire toutes les retouches de la frame courante. */
+export function clearRetouch() {
+  if (!frameCount()) return;
+  const frame = state.frame, n = (state.anim.frames[frame].paint || []).length;
+  if (!n) return hint('Cette frame n\'a aucune retouche.');
+  exec(setCmd('anim', ['frames', frame, 'paint'], undefined, `Effacer les ${n} retouches de la frame ${frame + 1}`));
 }
 
 /**
@@ -201,6 +241,7 @@ export function captureFrame() {
     const copy = clone(d.anim.frames[i]);
     delete copy.key;
     delete copy.label;
+    delete copy.paint; // les retouches valent pour la pose d'origine, pas pour celle qu'on va poser
     d.anim.frames.splice(i + 1, 0, copy);
     d.frame = i + 1;
   }));
@@ -233,7 +274,12 @@ export function setTool(tool) {
     hint('Le pinceau et la gomme modifient la label map : passez à l\'étape Rigger (touche 2).');
     return;
   }
+  if (tool === 'retouch') {
+    if (state.step !== 'animate') return hint('La retouche corrige les pixels d\'une frame : passez à l\'étape Animer (touche 3).');
+    if (!frameCount()) return hint('Aucune animation à retoucher : appliquez un preset ou créez une animation vide.');
+  }
   setView({ tool });
+  if (tool === 'retouch') hint('Retouche : peignez les pixels de CETTE frame avec une couleur de la palette. Alt+clic prend la couleur sous le curseur.');
   if ((tool === 'brush' || tool === 'eraser') && handRegionParts().length) {
     hint('Ce rig contient des polygones ou des exclusions écrits à la main : le premier trait les convertira en rectangles + pixels (annulable).');
   }

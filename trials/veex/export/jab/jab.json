@@ -1,0 +1,152 @@
+{
+  "frames": [
+    {
+      "filename": "jab 0",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 98,
+        "h": 116
+      },
+      "duration": 280
+    },
+    {
+      "filename": "jab 1",
+      "frame": {
+        "x": 98,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 98,
+        "h": 116
+      },
+      "duration": 120
+    },
+    {
+      "filename": "jab 2",
+      "frame": {
+        "x": 196,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 98,
+        "h": 116
+      },
+      "duration": 40
+    },
+    {
+      "filename": "jab 3",
+      "frame": {
+        "x": 294,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 98,
+        "h": 116
+      },
+      "duration": 200
+    },
+    {
+      "filename": "jab 4",
+      "frame": {
+        "x": 392,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 98,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 98,
+        "h": 116
+      },
+      "duration": 80
+    }
+  ],
+  "meta": {
+    "app": "animai",
+    "version": "0.1.0",
+    "image": "jab.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 490,
+      "h": 116
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "jab",
+        "from": 0,
+        "to": 4,
+        "direction": "forward"
+      }
+    ],
+    "animai": {
+      "name": "jab",
+      "loop": true,
+      "fps": 25.0,
+      "duration_ms": 720,
+      "frame_size": {
+        "w": 98,
+        "h": 116
+      },
+      "pivot": {
+        "x": 37,
+        "y": 114
+      },
+      "pivot_normalized": {
+        "x": 0.377551,
+        "y": 0.982759
+      },
+      "mirror": false
+    }
+  }
+}

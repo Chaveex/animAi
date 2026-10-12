@@ -184,6 +184,25 @@ Un pivot est un os de `rig.json` (`bones.<nom>` : `parent`, `joint`).
 - **Nom** de l'animation : champ de la carte Animer (`anim.name`).
 - Chaque frame est une pose complète, sans interpolation (convention du moteur) : la copie est le point de départ de la pose suivante.
 
+### Retouche par frame (`T`) — coquille : oui
+
+Pour corriger à la main ce que le rendu ne sait pas faire : un pixel manquant, un pixel en trop, un contour cassé dans une pose.
+
+- Disponible à l'étape Animer seulement, sur la frame affichée. Un trait modifie **cette frame et aucune autre**. La lecture s'arrête au premier trait.
+- **Couleur** : uniquement une couleur de la palette du sprite (pastille « Couleur » de la barre du viewport, ou `Alt`+clic = pipette sur le pixel affiché). Une retouche n'ajoute jamais de couleur.
+- Trois modes : **Peindre** ; **Effacer** (rend le pixel transparent dans cette frame) ; **Restaurer** (retire la retouche, le pixel redevient celui du rendu). Taille de pinceau commune avec le pinceau de la label map.
+- **« Effacer les retouches de la frame »** les retire toutes. Chaque trait est un pas d'annulation.
+- Le trait s'affiche tout de suite ; le moteur re-rend ensuite la frame avec les retouches écrites en dernier (`frames[i].paint` d'`anim.json`, voir `docs/schemas.md`). L'aperçu reste donc l'export.
+- Une frame retouchée porte un carré en haut à gauche de sa case dans la timeline. Dans la label map, un pixel retouché n'est ni une pièce ni un pixel « non assigné ».
+- Les retouches sont en coordonnées du sprite : **elles ne suivent pas les membres**. Si la pose de la frame change ensuite, un message le rappelle. « Capturer la pose » ne recopie pas les retouches dans la nouvelle frame.
+- Peindre dans la marge agrandit le canvas d'export (toutes les frames, pivot inchangé).
+
+### Pièces de remplacement — coquille : activation par frame
+
+Quand `rig.json` déclare des `swaps` (images dessinées à la main, voir `docs/schemas.md`), la barre de la timeline montre un groupe « Remplacement » : une pastille par image. Elle active ou retire le remplacement **dans la frame courante** (`frames[i].swap`), en un pas d'annulation. L'image suit son os : on la place et on la tourne avec l'outil Déplacer.
+
+Pas encore construit : déclarer un remplacement depuis l'éditeur (image, os, ancre, pièces remplacées), qui s'écrit pour l'instant dans `rig.json`. Une image redessinée sur le disque est reprise au prochain rendu (recharger la page). Le mode démo ne dessine pas les remplacements.
+
 ### Outils spécifiés, pas encore construits
 
 | Outil | Comportement décidé |
@@ -343,6 +362,7 @@ Source unique : `app/js/shortcuts.js` alimente à la fois le gestionnaire clavie
 | | `B` | Pinceau |
 | | `E` | Gomme |
 | | `J` | Déplacer un joint (Rigger) ou décaler un os dans la frame (Animer) |
+| | `T` | Retouche : peindre, effacer ou restaurer des pixels de la frame courante (Animer) ; `Alt`+clic = pipette |
 | | `Alt`+clic | Pinceau / gomme : prendre la pièce sous le curseur |
 | | `H` | Afficher / masquer l'os ou la pièce sélectionnés |
 | Viewport | `←` `↑` `→` `↓` | Curseur pixel, ou joint avec l'outil Déplacer : 1 px ; avec `Maj` : 5 px |

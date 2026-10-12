@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .errors import AnimaiError
 from .imageio import read_json
+from .sprite import parse_hex_color
 from .timing import DEFAULT_FPS
 
 PRESETS_DIR = Path(__file__).resolve().parent.parent / "presets"
@@ -26,7 +27,7 @@ def _check_pos(where: str, pos) -> None:
 
 
 ANIM_KEYS = {"version", "name", "loop", "fps", "frames", "rest_offsets"}
-FRAME_KEYS = {"duration_ms", "bones", "z", "ik", "key", "label"}
+FRAME_KEYS = {"duration_ms", "bones", "z", "ik", "key", "label", "paint", "swap"}
 POSE_KEYS = {"rot", "pos"}
 IK_TARGET_KEYS = {"pos", "rot"}
 
@@ -93,6 +94,19 @@ def validate_anim(anim: dict) -> list[str]:
             _check_pos(f"{where}, ik '{name}'", target.get("pos", [0, 0]))
             if not _is_num(target.get("rot", 0)):
                 raise AnimaiError(f"{where}, ik '{name}': rot must be a number (degrees)")
+        swap = frame.get("swap", [])
+        if not (isinstance(swap, list) and all(isinstance(s, str) for s in swap)):
+            raise AnimaiError(f"{where}: swap must be a list of swap names defined in rig.json")
+        paint = frame.get("paint", [])
+        if not isinstance(paint, list):
+            raise AnimaiError(f"{where}: paint must be a list of [x, y, \"#RRGGBB\"] or [x, y, null]")
+        for entry in paint:
+            if not (isinstance(entry, list) and len(entry) == 3 and _is_int(entry[0]) and _is_int(entry[1])
+                    and (entry[2] is None or isinstance(entry[2], str))):
+                raise AnimaiError(f"{where}: paint entries must be [x, y, \"#RRGGBB\"] or [x, y, null] "
+                                  f"with integer pixels, got {entry}")
+            if entry[2] is not None:
+                parse_hex_color(entry[2])
     if off_grid:
         warnings.append(f"duration_ms of frames {off_grid} is not a whole number of ticks "
                         f"(1000/fps = {tick:g} ms)")
@@ -136,7 +150,16 @@ def retarget(anim: dict, rig: dict) -> tuple[dict, list[str]]:
     missing_bones: list[str] = []
     missing_z: list[str] = []
     missing_ik: list[str] = []
+    missing_swaps: list[str] = []
+    swaps = rig.get("swaps", {})
     for frame in out["frames"]:
+        if "swap" in frame:
+            for name in frame["swap"]:
+                if name not in swaps and name not in missing_swaps:
+                    missing_swaps.append(name)
+            frame["swap"] = [n for n in frame["swap"] if n in swaps]
+            if not frame["swap"]:
+                del frame["swap"]
         for key, known, missing in (("bones", bones, missing_bones),
                                     ("z", bones_with_parts, missing_z),
                                     ("ik", ik_specs, missing_ik)):
@@ -150,4 +173,5 @@ def retarget(anim: dict, rig: dict) -> tuple[dict, list[str]]:
     warnings = [f"bone '{n}' is not in the rig: ignored" for n in missing_bones]
     warnings += [f"z override '{n}': no part attached to a bone of that name: ignored" for n in missing_z]
     warnings += [f"ik '{n}' is not defined in the rig: ignored" for n in missing_ik]
+    warnings += [f"swap '{n}' is not defined in the rig: ignored" for n in missing_swaps]
     return out, warnings

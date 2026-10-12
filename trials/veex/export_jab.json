@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "outputs": {
+    "spritesheet": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\export\\jab\\jab.png",
+    "json": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\export\\jab\\jab.json",
+    "gif": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\export\\jab\\jab.gif",
+    "format": "spritesheet",
+    "frame_count": 5,
+    "frame_size": [
+      98,
+      116
+    ],
+    "sheet_size": [
+      490,
+      116
+    ],
+    "pivot": [
+      37,
+      114
+    ],
+    "duration_ms": 720,
+    "mirror": false
+  },
+  "warnings": [],
+  "error": null
+}

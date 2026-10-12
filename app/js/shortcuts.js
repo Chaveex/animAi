@@ -28,6 +28,8 @@ export const SHORTCUTS = [
   { group: 'Outils', keys: 'B', label: 'Pinceau : assigner des pixels à la pièce sélectionnée', id: 'toolBrush', match: letter('b') },
   { group: 'Outils', keys: 'E', label: 'Gomme : rendre des pixels non assignés', id: 'toolEraser', match: letter('e') },
   { group: 'Outils', keys: 'J', label: 'Déplacer un pivot (Rigger) ou poser le squelette en glissant les pivots (Animer)', id: 'toolJoint', match: letter('j') },
+  { group: 'Outils', keys: 'T', label: 'Retouche (Animer) : peindre ou effacer des pixels dans la frame courante, avec les couleurs de la palette', id: 'toolRetouch', match: letter('t') },
+  { group: 'Outils', keys: 'Alt+clic', label: 'Retouche : pipette, prendre la couleur sous le curseur' },
   { group: 'Outils', keys: 'Double-clic', label: 'Outil Déplacer, étape Rigger : ajouter un pivot à cet endroit' },
   { group: 'Outils', keys: 'Maj+glisser / Alt+glisser', label: 'Outil Déplacer, étape Animer : angle libre (sinon pas de 15°) / décaler l\'os au lieu de tourner' },
   { group: 'Outils', keys: 'Alt+clic', label: 'Pinceau / gomme : prendre la pièce sous le curseur' },

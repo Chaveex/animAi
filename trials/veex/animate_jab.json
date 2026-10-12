@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "outputs": {
+    "frames_dir": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab",
+    "manifest": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\frames.json",
+    "frames": [
+      "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\frame_000.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\frame_001.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\frame_002.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\frame_003.png",
+      "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\frame_004.png"
+    ],
+    "contact_sheet": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\contact_sheet.png",
+    "preview": "F:\\Dev\\Tooling\\animAI\\trials\\veex\\frames\\jab\\preview.gif",
+    "name": "jab",
+    "frame_count": 5,
+    "duration_ms": 720,
+    "durations_ms": [
+      280,
+      120,
+      40,
+      200,
+      80
+    ],
+    "fps": 25.0,
+    "loop": true,
+    "canvas": [
+      98,
+      116
+    ],
+    "pivot": [
+      37,
+      114
+    ],
+    "mirror": false,
+    "rest_offsets": {},
+    "outline": null
+  },
+  "warnings": [
+    "view '3/4' is outside the v1 scope (side view only)",
+    "holes filled automatically (\"fill_holes\": false in rig.json to keep them): frame 2: 2 px, frame 3: 7 px"
+  ],
+  "error": null
+}

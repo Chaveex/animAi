@@ -95,10 +95,11 @@ def find_dislocations(manifest: dict, index: int) -> list[tuple[int, int, str, f
     origin = manifest.get("origin", [0, 0])
     radii = manifest.get("joints", {})
     with_parts = {p.get("bone") for p in manifest.get("parts", {}).values()}
+    replaced = set(manifest["frames"][index].get("hidden_bones", []))      # drawn by a swap in this frame
     out = []
     for bone, spec in rest.items():
         parent = spec.get("parent")
-        if parent is None or bone not in with_parts or bone not in pose or parent not in pose \
+        if parent is None or bone in replaced or bone not in with_parts or bone not in pose or parent not in pose \
                 or parent not in rest:
             continue
         dx = spec["joint"][0] - rest[parent]["joint"][0]
@@ -177,8 +178,9 @@ def find_holes(frame: np.ndarray, manifest: dict, index: int) -> list[tuple[int,
     """Every hole of frame ``index``: ``(x, y, cause)``, canvas coordinates, raster order."""
     origin = manifest.get("origin", [0, 0])
     pose = manifest["frames"][index].get("bones", {})
-    holes = [(x, y, f"open joint '{b}'") for x, y, b in
-             find_joint_holes(frame, origin, pose, manifest.get("joints", {}))]
+    replaced = set(manifest["frames"][index].get("hidden_bones", []))      # drawn by a swap in this frame
+    radii = {b: r for b, r in manifest.get("joints", {}).items() if b not in replaced}
+    holes = [(x, y, f"open joint '{b}'") for x, y, b in find_joint_holes(frame, origin, pose, radii)]
     holes += [(x, y, f"part '{p}' has no data under its front neighbour") for x, y, p in
               find_discovery_holes(frame, origin, manifest.get("parts", {}),
                                    manifest.get("rest", {}).get("bones", {}), pose)]

@@ -13,7 +13,7 @@ from .errors import AnimaiError
 from .kinematics import BonePose, normalize_angle, round_half_up, solve_pose
 from .morph import components, dilate4, enclosed_transparent
 from .rig import (OUTLINE_MODES, UNASSIGNED, LabelMap, Part, detect_outline_color, outline_setting,
-                  silhouette_border)
+                  silhouette_border, swap_hides)
 from .rotate import rotate_part
 from .sprite import opaque_bbox, pack_rgb, parse_hex_color
 
@@ -38,6 +38,7 @@ class RenderResult:
     layers: list[list[Layer]] = field(default_factory=list)   # per frame, back to front
     outline: "OutlineSpec | None" = None
     sprite: np.ndarray | None = None                          # the source sprite (for the outline pass)
+    paint: list[dict] = field(default_factory=list)           # per frame, hand retouches (``frame_paint``)
 
 
 @dataclass
@@ -270,11 +271,47 @@ def hole_patches(layers: list[Layer], origin: tuple[int, int], size: tuple[int, 
     return patches, len(filled)
 
 
-def finish_frame(result: "RenderResult", layers: list[Layer]) -> np.ndarray:
-    """Compose a layer stack on the canvas of ``result`` and run the outline pass."""
+def frame_paint(frame: dict, palette: set[int], where: str) -> dict:
+    """Hand retouches of an animation frame: ``{(x, y): packed 0xRRGGBB, or None to erase}``.
+
+    ``frame["paint"]`` is a list of ``[x, y, "#RRGGBB"]`` (paint) or ``[x, y, null]``
+    (erase), in sprite coordinates; the last entry of a pixel wins. A colour that
+    is not in the sprite palette is an error: a retouch never adds a colour.
+    """
+    out: dict = {}
+    for x, y, colour in frame.get("paint", []):
+        if colour is None:
+            out[(x, y)] = None
+            continue
+        r, g, b = parse_hex_color(colour)
+        packed = (r << 16) | (g << 8) | b
+        if packed not in palette:
+            raise AnimaiError(f"{where}: paint colour {colour} at [{x}, {y}] is not in the sprite palette")
+        out[(x, y)] = packed
+    return out
+
+
+def apply_paint(frame: np.ndarray, origin: tuple[int, int], paint: dict) -> np.ndarray:
+    """Write the retouches of ``frame_paint`` on a finished frame (pixels outside the canvas are clipped)."""
+    if not paint:
+        return frame
+    h, w = frame.shape[:2]
+    out = frame.copy()
+    for (x, y), colour in paint.items():
+        cx, cy = x - origin[0], y - origin[1]
+        if 0 <= cx < w and 0 <= cy < h:
+            out[cy, cx] = (0, 0, 0, 0) if colour is None else ((colour >> 16) & 0xFF, (colour >> 8) & 0xFF,
+                                                               colour & 0xFF, 255)
+    return out
+
+
+def finish_frame(result: "RenderResult", layers: list[Layer], index: int | None = None) -> np.ndarray:
+    """Compose a layer stack on the canvas of ``result``, run the outline pass, then the retouches of frame ``index``."""
     frame = compose(layers, result.origin, result.canvas)
     if result.outline is not None and result.sprite is not None:
         frame = apply_outline(frame, layers, result.origin, result.sprite, result.outline)
+    if index is not None and index < len(result.paint):
+        frame = apply_paint(frame, result.origin, result.paint[index])
     return frame
 
 
@@ -295,19 +332,80 @@ def compute_pivot(rgba: np.ndarray, rig: dict) -> tuple[int, int]:
     return x + round_half_up(w * fx), y + round_half_up(h * fy)
 
 
+def check_swap_images(rig: dict, rgba: np.ndarray, images: dict[str, np.ndarray]) -> None:
+    """A replacement image must be clean pixel art of the same sprite: binary alpha, palette colours only."""
+    palette = set(np.unique(pack_rgb(rgba)[rgba[..., 3] > 0]).tolist())
+    for name in rig.get("swaps", {}):
+        if name not in images:
+            raise AnimaiError(f"swap '{name}': image not loaded")
+        image = images[name]
+        alpha = image[..., 3]
+        if ((alpha != 0) & (alpha != 255)).any():
+            raise AnimaiError(f"swap '{name}': alpha must be 0 or 255 (no semi-transparent pixel)")
+        if not (alpha > 0).any():
+            raise AnimaiError(f"swap '{name}': the image has no opaque pixel")
+        alien = sorted(set(np.unique(pack_rgb(image)[alpha > 0]).tolist()) - palette)
+        if alien:
+            shown = ", ".join(f"#{c:06x}" for c in alien[:5])
+            raise AnimaiError(f"swap '{name}': {len(alien)} colour(s) not in the sprite palette ({shown}"
+                              f"{', ...' if len(alien) > 5 else ''}); a replacement only uses the sprite's colours")
+
+
+def frame_swaps(rig: dict, frame: dict) -> tuple[list[str], set[str], set[str]]:
+    """``(active swap names, hidden parts, hidden bones)`` of an animation frame.
+
+    A bone is hidden when it carries parts and all of them are replaced: its
+    articulation is then neither filled nor checked.
+    """
+    active = [n for n in frame.get("swap", []) if n in rig.get("swaps", {})]
+    hidden: set[str] = set()
+    for name in active:
+        hidden.update(swap_hides(rig, name))
+    by_bone: dict[str, list[str]] = {}
+    for part, spec in rig["parts"].items():
+        by_bone.setdefault(spec["bone"], []).append(part)
+    bones = {b for b, names in by_bone.items() if all(n in hidden for n in names)}
+    return active, hidden, bones
+
+
 def frame_layers(parts: list[Part], rig: dict, pose: dict[str, BonePose],
                  z_override: dict[str, int] | None = None, method: str = "rotsprite",
-                 cache: dict | None = None) -> list[Layer]:
+                 cache: dict | None = None, swaps: list[str] | None = None,
+                 images: dict[str, np.ndarray] | None = None) -> list[Layer]:
     """Rotated and placed parts for one pose, sorted back to front.
 
     ``z_override`` maps a *bone* name to an absolute z replacing, for this frame,
     the z of every part attached to that bone (children are not affected).
     Larger z = in front; equal z = definition order of the parts.
+
+    ``swaps`` (names of ``rig["swaps"]``) replaces parts by a drawn image for
+    this pose: the parts the swap hides are not drawn, and its image (``images``)
+    is placed like a part of the swap's bone, the ``anchor`` pixel on the joint,
+    rotated with the bone. The layer is owned by the first part it replaces.
     """
     z_override = z_override or {}
     cache = cache if cache is not None else {}
     layers: list[Layer] = []
+    hidden: set[str] = set()
+    for k, name in enumerate(swaps or []):
+        spec = rig["swaps"][name]
+        hides = swap_hides(rig, name)
+        hidden.update(hides)
+        bone = spec["bone"]
+        bp = pose[bone]
+        joint = rig["bones"][bone]["joint"]
+        key = ("swap", name, round(bp.angle % 360.0, 6), method)
+        if key not in cache:
+            origin = (joint[0] - spec["anchor"][0], joint[1] - spec["anchor"][1])
+            cache[key] = rotate_part(images[name], origin, joint, bp.angle, method)
+        image, (x0, y0) = cache[key]
+        dx = round_half_up(bp.pos[0]) - joint[0]
+        dy = round_half_up(bp.pos[1]) - joint[1]
+        z = spec.get("z", int(rig["parts"][hides[0]].get("z", 0)))
+        layers.append(Layer(z_override.get(bone, z), len(parts) + k, image, (x0 + dx, y0 + dy), hides[0]))
     for part in parts:
+        if part.name in hidden:
+            continue
         bp = pose[part.bone]
         joint = rig["bones"][part.bone]["joint"]
         key = (part.index, round(bp.angle % 360.0, 6), method)
@@ -363,13 +461,18 @@ def render_rest(rgba: np.ndarray, rig: dict, parts: list[Part]) -> np.ndarray:
 def render_animation(rgba: np.ndarray, rig: dict, parts: list[Part], anim: dict, *,
                      method: str = "rotsprite", padding: int = 2,
                      outline: OutlineSpec | None = None, offsets: dict | None = None,
-                     fill_radii: dict[str, int] | None = None) -> RenderResult:
+                     fill_radii: dict[str, int] | None = None,
+                     swap_images: dict[str, np.ndarray] | None = None) -> RenderResult:
     """Render every frame of ``anim`` on a constant canvas with a stable pivot.
 
     ``outline`` (from ``outline_spec``) enables the outline pass on every frame.
     ``offsets`` (rest offsets, ``{bone: [dx, dy]}``) are applied to every frame.
     ``fill_radii`` (``qa.joint_radii``; None = off) enables the hole filling pass,
     see ``hole_patches``; it runs before the outline pass.
+    The hand retouches of each frame (``paint``, see ``frame_paint``) are written
+    last, over everything else, and the canvas grows to hold the painted pixels.
+    ``swap_images`` (``{name: RGBA}``) are the replacement images of ``rig["swaps"]``,
+    used by the frames that list them in ``swap`` (see ``frame_layers``).
     """
     if padding < 0:
         raise AnimaiError("padding must be >= 0")
@@ -381,13 +484,27 @@ def render_animation(rgba: np.ndarray, rig: dict, parts: list[Part], anim: dict,
     poses: list[dict[str, BonePose]] = []
     px, py = compute_pivot(rgba, rig)
     box = (px, py, px, py)          # the pivot always lies inside the canvas
+    palette = set(np.unique(pack_rgb(rgba)[rgba[..., 3] > 0]).tolist())
+    paints: list[dict] = []
+    hidden_bones: list[set[str]] = []
+    if swap_images is not None:
+        check_swap_images(rig, rgba, swap_images)
     for index, frame in enumerate(anim["frames"]):
         pose, pose_warnings = solve_pose(rig, frame, offsets)
         warnings += [f"frame {index}: {w}" for w in pose_warnings]
-        layers = frame_layers(parts, rig, pose, frame.get("z"), method, cache)
+        active, _, gone = frame_swaps(rig, frame)
+        if active and swap_images is None:
+            raise AnimaiError(f"frame {index}: swap images were not loaded")
+        hidden_bones.append(gone)
+        layers = frame_layers(parts, rig, pose, frame.get("z"), method, cache, active, swap_images)
         b = layers_bbox(layers)
         if b is not None:
             box = (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
+        paint = frame_paint(frame, palette, f"frame {index}")
+        for (x, y), colour in paint.items():
+            if colour is not None:
+                box = (min(box[0], x), min(box[1], y), max(box[2], x + 1), max(box[3], y + 1))
+        paints.append(paint)
         stacks.append(layers)
         poses.append(pose)
     origin = (box[0] - padding, box[1] - padding)
@@ -395,11 +512,12 @@ def render_animation(rgba: np.ndarray, rig: dict, parts: list[Part], anim: dict,
     if size[0] <= 0 or size[1] <= 0:
         raise AnimaiError("animation renders no pixel")
     result = RenderResult([], size, origin, (px - origin[0], py - origin[1]), poses, warnings, stacks,
-                          outline, rgba)
+                          outline, rgba, paints)
     if fill_radii is not None:
         counts = []
         for index, layers in enumerate(stacks):
-            patches, count = hole_patches(layers, origin, size, poses[index], fill_radii, rgba,
+            radii = {b: r for b, r in fill_radii.items() if b not in hidden_bones[index]}
+            patches, count = hole_patches(layers, origin, size, poses[index], radii, rgba,
                                           None if outline is None else outline.color)
             layers.extend(patches)
             if count:
@@ -407,7 +525,7 @@ def render_animation(rgba: np.ndarray, rig: dict, parts: list[Part], anim: dict,
         if counts:
             warnings.append("holes filled automatically (\"fill_holes\": false in rig.json to keep them): "
                             + ", ".join(counts))
-    result.frames = [finish_frame(result, layers) for layers in stacks]
+    result.frames = [finish_frame(result, layers, index) for index, layers in enumerate(stacks)]
     return result
 
 

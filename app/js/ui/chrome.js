@@ -4,9 +4,9 @@
 import { h, $, mount, icon, fmtTime } from '../dom.js';
 import {
   state, on, emit, setStep, setLayer, setView, setUnassignedColor, UNASSIGNED_DEFAULT, undo, redo, canUndo, canRedo, backend, toast,
-  resolveConflict, retrySave, simulateClaude, importImage, loadExample, loadProject, isAnimStep, layerAvailable,
+  resolveConflict, retrySave, simulateClaude, importImage, loadExample, loadProject, isAnimStep, layerAvailable, frameCount, retouchColor,
 } from '../store.js';
-import { setTool } from '../edits.js';
+import { setTool, clearRetouch } from '../edits.js';
 import { SHORTCUTS } from '../shortcuts.js';
 import * as viewport from '../viewport.js';
 
@@ -22,6 +22,7 @@ const TOOLS = [
   { id: 'brush', label: 'Pinceau', key: 'B', icon: 'brush' },
   { id: 'eraser', label: 'Gomme', key: 'E', icon: 'eraser' },
   { id: 'joint', label: 'Déplacer joint / os', key: 'J', icon: 'joint' },
+  { id: 'retouch', label: 'Retouche : peindre les pixels de la frame', key: 'T', icon: 'retouch' },
 ];
 
 const LAYERS = [
@@ -76,6 +77,13 @@ function syncLabel() {
 
 let syncOpen = false;
 let colorOpen = false;
+let retouchOpen = false;
+
+const RETOUCH_MODES = [
+  { id: 'paint', label: 'Peindre', title: 'Peindre avec la couleur choisie' },
+  { id: 'erase', label: 'Effacer', title: 'Rendre des pixels transparents dans cette frame' },
+  { id: 'restore', label: 'Restaurer', title: 'Retirer la retouche : le pixel redevient celui du rendu' },
+];
 
 function renderTopbar() {
   const ready = state.status === 'ready';
@@ -117,13 +125,13 @@ function renderTopbar() {
 }
 
 export function closePopovers() {
-  if (!syncOpen && !colorOpen) return false;
+  if (!syncOpen && !colorOpen && !retouchOpen) return false;
   if (syncOpen) {
     syncOpen = false;
     renderTopbar();
   }
-  if (colorOpen) {
-    colorOpen = false;
+  if (colorOpen || retouchOpen) {
+    colorOpen = retouchOpen = false;
     renderLayerbar();
   }
   return true;
@@ -160,7 +168,8 @@ function renderBanner() {
 function renderTools() {
   const ready = state.status === 'ready';
   mount($('#toolrail'), TOOLS.map((t) => {
-    const off = t.id !== 'select' && (state.step === 'prepare' || (t.id !== 'joint' && state.step !== 'rig'));
+    const off = t.id === 'retouch' ? state.step !== 'animate' || !frameCount()
+      : t.id !== 'select' && (state.step === 'prepare' || (t.id !== 'joint' && state.step !== 'rig'));
     return h('button', {
       class: 'icon-btn tool', 'data-fid': 'tool:' + t.id, disabled: !ready,
       'aria-pressed': String(state.tool === t.id), 'aria-disabled': off ? 'true' : null,
@@ -173,7 +182,9 @@ function renderTools() {
 // --- Barre des calques et du zoom ----------------------------------------------------
 function renderLayerbar() {
   const ready = state.status === 'ready';
-  const painting = state.tool === 'brush' || state.tool === 'eraser';
+  const retouching = ready && state.tool === 'retouch';
+  const painting = state.tool === 'brush' || state.tool === 'eraser' || retouching;
+  const rc = retouching ? retouchColor() : null;
   const z = viewport.getZoom();
   mount($('#layerbar'),
     LAYERS.map((l) => {
@@ -205,11 +216,28 @@ function renderLayerbar() {
           // `change` (et non `input`) : reconstruire la barre pendant le choix fermerait le sélecteur
           h('input', { type: 'color', value: state.unassignedColor.toLowerCase(), 'data-fid': 'unassigned-color-custom', onchange: (e) => setUnassignedColor(e.target.value) }),
           h('code', {}, state.unassignedColor)))),
+    retouching && h('div', { class: 'bar-field color-wrap' },
+      h('button', {
+        class: 'chip', 'data-fid': 'retouch-color', 'aria-expanded': String(retouchOpen), 'aria-haspopup': 'true',
+        title: 'Couleur du pinceau de retouche (palette du sprite). Alt+clic dans le viewport : pipette.', onclick: () => { retouchOpen = !retouchOpen; renderLayerbar(); },
+      }, h('span', { class: 'px-swatch', style: { background: rc || 'transparent' } }), 'Couleur ', h('code', {}, (rc || '').toUpperCase())),
+      retouchOpen && h('div', { class: 'popover color-popover', role: 'group', 'aria-label': 'Couleur du pinceau de retouche' },
+        h('div', { class: 'swatches palette-swatches' }, state.palette.map((c) => h('button', {
+          class: 'swatch', 'data-fid': 'retouch-color:' + c.toLowerCase(), style: { background: c },
+          'aria-pressed': String(rc === c.toLowerCase()), 'aria-label': c.toUpperCase(), title: c.toUpperCase(),
+          onclick: () => { retouchOpen = false; setView({ retouchColor: c.toLowerCase(), retouchMode: 'paint' }); },
+        }))),
+        h('p', { class: 'muted popover-note' }, 'Seules les couleurs du sprite sont proposées : une retouche n\'ajoute jamais de couleur.'))),
+    retouching && RETOUCH_MODES.map((m) => h('button', {
+      class: 'chip', 'data-fid': 'retouch-mode:' + m.id, 'aria-pressed': String(state.retouchMode === m.id), title: m.title,
+      onclick: () => setView({ retouchMode: m.id }),
+    }, m.label)),
     painting && h('label', { class: 'bar-field' }, 'Taille',
       h('input', {
         type: 'number', class: 'num', min: '1', max: '16', step: '1', value: String(state.brushSize), 'data-fid': 'brush-size',
         'aria-label': 'Taille du pinceau en pixels', onchange: (e) => setView({ brushSize: Math.max(1, Math.min(16, parseInt(e.target.value, 10) || 1)) }),
       }), 'px'),
+    retouching && h('button', { class: 'btn', 'data-fid': 'retouch-clear', title: 'Retirer toutes les retouches de la frame courante (annulable)', onclick: clearRetouch }, 'Effacer les retouches de la frame'),
     h('span', { class: 'spacer' }),
     h('select', { 'data-fid': 'background', disabled: !ready, 'aria-label': 'Fond du viewport', title: 'Fond du viewport (Maj+B)', onchange: (e) => setView({ background: e.target.value }) },
       BACKGROUNDS.map((b) => h('option', { value: b.id, selected: state.background === b.id }, 'Fond : ' + b.label))),
@@ -398,7 +426,7 @@ export function initChrome() {
   });
   on('announce', (text) => ($('#live').textContent = text));
   document.addEventListener('pointerdown', (e) => {
-    if ((syncOpen && !e.target.closest('.sync-wrap')) || (colorOpen && !e.target.closest('.color-wrap'))) closePopovers();
+    if ((syncOpen && !e.target.closest('.sync-wrap')) || ((colorOpen || retouchOpen) && !e.target.closest('.color-wrap'))) closePopovers();
   });
   initDrop();
   renderTopbar();

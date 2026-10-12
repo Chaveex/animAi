@@ -376,6 +376,13 @@ export function renderFrame(project, i, { hiddenParts = [] } = {}) {
     }
   }
 
+  // Retouches de la frame : écrites en dernier, par-dessus tout (comme le moteur).
+  for (const [x, y, c] of (frame && frame.paint) || []) {
+    if (x < -pad || y < -pad || x >= w + pad || y >= h + pad) continue;
+    const di = (y + pad) * W + x + pad, v = c ? parseInt(c.slice(1), 16) : 0;
+    out.set(c ? [(v >> 16) & 255, (v >> 8) & 255, v & 255, 255] : [0, 0, 0, 0], di * 4);
+  }
+
   const joints = {};
   for (const [b, bone] of Object.entries(rig.bones)) {
     const M = mats[b] || I;
